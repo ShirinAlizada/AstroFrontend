@@ -10,33 +10,73 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AstroloqRouteImport } from './routes/astroloq'
+import { Route as HoroskopRouteImport } from './routes/horoskop'
+import { Route as MetnuRouteImport } from './routes/metnu'
+import { Route as QezetRouteImport } from './routes/qezet'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AstroloqRoute = AstroloqRouteImport.update({
+  id: '/astroloq',
+  path: '/astroloq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HoroskopRoute = HoroskopRouteImport.update({
+  id: '/horoskop',
+  path: '/horoskop',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MetnuRoute = MetnuRouteImport.update({
+  id: '/metnu',
+  path: '/metnu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QezetRoute = QezetRouteImport.update({
+  id: '/qezet',
+  path: '/qezet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/astroloq': typeof AstroloqRoute
+  '/horoskop': typeof HoroskopRoute
+  '/metnu': typeof MetnuRoute
+  '/qezet': typeof QezetRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/astroloq': typeof AstroloqRoute
+  '/horoskop': typeof HoroskopRoute
+  '/metnu': typeof MetnuRoute
+  '/qezet': typeof QezetRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/astroloq': typeof AstroloqRoute
+  '/horoskop': typeof HoroskopRoute
+  '/metnu': typeof MetnuRoute
+  '/qezet': typeof QezetRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/astroloq' | '/horoskop' | '/metnu' | '/qezet'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/astroloq' | '/horoskop' | '/metnu' | '/qezet'
+  id: '__root__' | '/' | '/astroloq' | '/horoskop' | '/metnu' | '/qezet'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AstroloqRoute: typeof AstroloqRoute
+  HoroskopRoute: typeof HoroskopRoute
+  MetnuRoute: typeof MetnuRoute
+  QezetRoute: typeof QezetRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +88,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/astroloq': {
+      id: '/astroloq'
+      path: '/astroloq'
+      fullPath: '/astroloq'
+      preLoaderRoute: typeof AstroloqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/horoskop': {
+      id: '/horoskop'
+      path: '/horoskop'
+      fullPath: '/horoskop'
+      preLoaderRoute: typeof HoroskopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/metnu': {
+      id: '/metnu'
+      path: '/metnu'
+      fullPath: '/metnu'
+      preLoaderRoute: typeof MetnuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qezet': {
+      id: '/qezet'
+      path: '/qezet'
+      fullPath: '/qezet'
+      preLoaderRoute: typeof QezetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AstroloqRoute: AstroloqRoute,
+  HoroskopRoute: HoroskopRoute,
+  MetnuRoute: MetnuRoute,
+  QezetRoute: QezetRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
