@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HoroskopRouteImport } from './routes/horoskop'
+import { Route as QezetRouteImport } from './routes/qezet'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const HoroskopRoute = HoroskopRouteImport.update({
   path: '/horoskop',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QezetRoute = QezetRouteImport.update({
+  id: '/qezet',
+  path: '/qezet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/horoskop': typeof HoroskopRoute
+  '/qezet': typeof QezetRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/horoskop': typeof HoroskopRoute
+  '/qezet': typeof QezetRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/horoskop': typeof HoroskopRoute
+  '/qezet': typeof QezetRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/horoskop'
+  fullPaths: '/' | '/horoskop' | '/qezet'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/horoskop'
-  id: '__root__' | '/' | '/horoskop'
+  to: '/' | '/horoskop' | '/qezet'
+  id: '__root__' | '/' | '/horoskop' | '/qezet'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HoroskopRoute: typeof HoroskopRoute
+  QezetRoute: typeof QezetRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HoroskopRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/qezet': {
+      id: '/qezet'
+      path: '/qezet'
+      fullPath: '/qezet'
+      preLoaderRoute: typeof QezetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HoroskopRoute: HoroskopRoute,
+  QezetRoute: QezetRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
