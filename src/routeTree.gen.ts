@@ -10,19 +10,32 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AstroloqRouteImport } from './routes/astroloq'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as HoroskopRouteImport } from './routes/horoskop'
 import { Route as MetnuRouteImport } from './routes/metnu'
 import { Route as QezetRouteImport } from './routes/qezet'
+import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated/profil'
+import { Route as AuthenticatedXeriteRouteImport } from './routes/_authenticated/xerite'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AstroloqRoute = AstroloqRouteImport.update({
   id: '/astroloq',
   path: '/astroloq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HoroskopRoute = HoroskopRouteImport.update({
@@ -40,40 +53,88 @@ const QezetRoute = QezetRouteImport.update({
   path: '/qezet',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedProfilRoute = AuthenticatedProfilRouteImport.update({
+  id: '/profil',
+  path: '/profil',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedXeriteRoute = AuthenticatedXeriteRouteImport.update({
+  id: '/xerite',
+  path: '/xerite',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/astroloq': typeof AstroloqRoute
+  '/auth': typeof AuthRoute
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
   '/qezet': typeof QezetRoute
+  '/profil': typeof AuthenticatedProfilRoute
+  '/xerite': typeof AuthenticatedXeriteRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/astroloq': typeof AstroloqRoute
+  '/auth': typeof AuthRoute
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
   '/qezet': typeof QezetRoute
+  '/profil': typeof AuthenticatedProfilRoute
+  '/xerite': typeof AuthenticatedXeriteRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/astroloq': typeof AstroloqRoute
+  '/auth': typeof AuthRoute
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
   '/qezet': typeof QezetRoute
+  '/_authenticated/profil': typeof AuthenticatedProfilRoute
+  '/_authenticated/xerite': typeof AuthenticatedXeriteRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/astroloq' | '/horoskop' | '/metnu' | '/qezet'
+  fullPaths:
+    | '/'
+    | '/astroloq'
+    | '/auth'
+    | '/horoskop'
+    | '/metnu'
+    | '/qezet'
+    | '/profil'
+    | '/xerite'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/astroloq' | '/horoskop' | '/metnu' | '/qezet'
-  id: '__root__' | '/' | '/astroloq' | '/horoskop' | '/metnu' | '/qezet'
+  to:
+    | '/'
+    | '/astroloq'
+    | '/auth'
+    | '/horoskop'
+    | '/metnu'
+    | '/qezet'
+    | '/profil'
+    | '/xerite'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/astroloq'
+    | '/auth'
+    | '/horoskop'
+    | '/metnu'
+    | '/qezet'
+    | '/_authenticated/profil'
+    | '/_authenticated/xerite'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AstroloqRoute: typeof AstroloqRoute
+  AuthRoute: typeof AuthRoute
   HoroskopRoute: typeof HoroskopRoute
   MetnuRoute: typeof MetnuRoute
   QezetRoute: typeof QezetRoute
@@ -88,11 +149,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/astroloq': {
       id: '/astroloq'
       path: '/astroloq'
       fullPath: '/astroloq'
       preLoaderRoute: typeof AstroloqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/horoskop': {
@@ -116,12 +191,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QezetRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/profil': {
+      id: '/_authenticated/profil'
+      path: '/profil'
+      fullPath: '/profil'
+      preLoaderRoute: typeof AuthenticatedProfilRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/xerite': {
+      id: '/_authenticated/xerite'
+      path: '/xerite'
+      fullPath: '/xerite'
+      preLoaderRoute: typeof AuthenticatedXeriteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedProfilRoute: typeof AuthenticatedProfilRoute
+  AuthenticatedXeriteRoute: typeof AuthenticatedXeriteRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedProfilRoute: AuthenticatedProfilRoute,
+  AuthenticatedXeriteRoute: AuthenticatedXeriteRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AstroloqRoute: AstroloqRoute,
+  AuthRoute: AuthRoute,
   HoroskopRoute: HoroskopRoute,
   MetnuRoute: MetnuRoute,
   QezetRoute: QezetRoute,
