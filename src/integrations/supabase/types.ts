@@ -14,16 +14,358 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      astrologers: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string
+          id: string
+          languages: string[]
+          price_azn: number
+          rating: number
+          specialties: string[]
+          title: string | null
+          updated_at: string
+          user_id: string | null
+          verified: boolean
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          languages?: string[]
+          price_azn?: number
+          rating?: number
+          specialties?: string[]
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+          verified?: boolean
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          languages?: string[]
+          price_azn?: number
+          rating?: number
+          specialties?: string[]
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+          verified?: boolean
+        }
+        Relationships: []
+      }
+      bookings: {
+        Row: {
+          astrologer_id: string
+          created_at: string
+          id: string
+          note: string | null
+          scheduled_at: string
+          session_type: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          astrologer_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          scheduled_at: string
+          session_type?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          astrologer_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          scheduled_at?: string
+          session_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_astrologer_id_fkey"
+            columns: ["astrologer_id"]
+            isOneToOne: false
+            referencedRelation: "astrologers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_replies: {
+        Row: {
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          is_hidden: boolean
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          author_name?: string
+          body: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_replies_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "forum_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_topics: {
+        Row: {
+          author_name: string
+          body: string
+          category: string
+          created_at: string
+          id: string
+          is_hidden: boolean
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          author_name?: string
+          body: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          author_name?: string
+          body?: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      horoscopes: {
+        Row: {
+          career: number
+          content: string
+          created_at: string
+          finance: number
+          id: string
+          love: number
+          period: string
+          period_start: string
+          sign: string
+        }
+        Insert: {
+          career?: number
+          content: string
+          created_at?: string
+          finance?: number
+          id?: string
+          love?: number
+          period: string
+          period_start: string
+          sign: string
+        }
+        Update: {
+          career?: number
+          content?: string
+          created_at?: string
+          finance?: number
+          id?: string
+          love?: number
+          period?: string
+          period_start?: string
+          sign?: string
+        }
+        Relationships: []
+      }
+      journal_entries: {
+        Row: {
+          content: string
+          created_at: string
+          entry_date: string
+          id: string
+          mood: number
+          title: string | null
+          transit_note: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          entry_date?: string
+          id?: string
+          mood?: number
+          title?: string | null
+          transit_note?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          entry_date?: string
+          id?: string
+          mood?: number
+          title?: string | null
+          transit_note?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      natal_charts: {
+        Row: {
+          chart: Json
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chart: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chart?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          ascendant: string | null
+          avatar_url: string | null
+          bio: string | null
+          birth_date: string | null
+          birth_lat: number | null
+          birth_lon: number | null
+          birth_place: string | null
+          birth_time: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          moon_sign: string | null
+          sun_sign: string | null
+          tz_offset: number | null
+          updated_at: string
+        }
+        Insert: {
+          ascendant?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          birth_date?: string | null
+          birth_lat?: number | null
+          birth_lon?: number | null
+          birth_place?: string | null
+          birth_time?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          moon_sign?: string | null
+          sun_sign?: string | null
+          tz_offset?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ascendant?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          birth_date?: string | null
+          birth_lat?: number | null
+          birth_lon?: number | null
+          birth_place?: string | null
+          birth_time?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          moon_sign?: string | null
+          sun_sign?: string | null
+          tz_offset?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "astrologer" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +492,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "astrologer", "user"],
+    },
   },
 } as const
