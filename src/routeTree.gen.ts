@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AstroloqRouteImport } from './routes/astroloq'
 import { Route as HoroskopRouteImport } from './routes/horoskop'
 import { Route as QezetRouteImport } from './routes/qezet'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AstroloqRoute = AstroloqRouteImport.update({
+  id: '/astroloq',
+  path: '/astroloq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HoroskopRoute = HoroskopRouteImport.update({
@@ -31,30 +37,34 @@ const QezetRoute = QezetRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/astroloq': typeof AstroloqRoute
   '/horoskop': typeof HoroskopRoute
   '/qezet': typeof QezetRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/astroloq': typeof AstroloqRoute
   '/horoskop': typeof HoroskopRoute
   '/qezet': typeof QezetRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/astroloq': typeof AstroloqRoute
   '/horoskop': typeof HoroskopRoute
   '/qezet': typeof QezetRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/horoskop' | '/qezet'
+  fullPaths: '/' | '/astroloq' | '/horoskop' | '/qezet'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/horoskop' | '/qezet'
-  id: '__root__' | '/' | '/horoskop' | '/qezet'
+  to: '/' | '/astroloq' | '/horoskop' | '/qezet'
+  id: '__root__' | '/' | '/astroloq' | '/horoskop' | '/qezet'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AstroloqRoute: typeof AstroloqRoute
   HoroskopRoute: typeof HoroskopRoute
   QezetRoute: typeof QezetRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/astroloq': {
+      id: '/astroloq'
+      path: '/astroloq'
+      fullPath: '/astroloq'
+      preLoaderRoute: typeof AstroloqRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/horoskop': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AstroloqRoute: AstroloqRoute,
   HoroskopRoute: HoroskopRoute,
   QezetRoute: QezetRoute,
 }
