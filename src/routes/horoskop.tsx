@@ -1,67 +1,120 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Page, PageHeader } from "@/components/Page";
+import { SIGNS_AZ, SIGN_SYMBOLS } from "@/lib/astrology";
 
 export const Route = createFileRoute("/horoskop")({
   head: () => ({
     meta: [
-      { title: "Horoskop — Ruh Astrolojiya" },
-      { name: "description", content: "Gündəlik horoskop və bürclərin səmavi təlimatları." },
-      { property: "og:title", content: "Horoskop — Ruh Astrolojiya" },
-      { property: "og:description", content: "Gündəlik horoskop və bürclərin səmavi təlimatları." },
+      { title: "Horoskop — günlük, həftəlik, aylıq | Ruh Astrolojiya" },
+      { name: "description", content: "12 bürc üçün günlük, həftəlik və aylıq horoskop: sevgi, karyera və maliyyə proqnozları." },
+      { property: "og:title", content: "Horoskop — günlük, həftəlik, aylıq" },
+      { property: "og:description", content: "12 bürc üçün günlük, həftəlik və aylıq astroloji proqnozlar." },
+      { property: "og:type", content: "website" },
     ],
   }),
-  component: HoroskopPage,
+  component: HoroscopePage,
 });
 
-const signs = [
-  { name: "Qoç", symbol: "♈", date: "21 Mar — 19 Apr" },
-  { name: "Buğa", symbol: "♉", date: "20 Apr — 20 May" },
-  { name: "Əkizlər", symbol: "♊", date: "21 May — 20 İyun" },
-  { name: "Xərçəng", symbol: "♋", date: "21 İyun — 22 İyul" },
-  { name: "Aslan", symbol: "♌", date: "23 İyul — 22 Avq" },
-  { name: "Qız", symbol: "♍", date: "23 Avq — 22 Sen" },
-  { name: "Tərəzi", symbol: "♎", date: "23 Sen — 22 Okt" },
-  { name: "Əqrəb", symbol: "♏", date: "23 Okt — 21 Noy" },
-  { name: "Oxatan", symbol: "♐", date: "22 Noy — 21 Dek" },
-  { name: "Oğlaq", symbol: "♑", date: "22 Dek — 19 Yan" },
-  { name: "Dolça", symbol: "♒", date: "20 Yan — 18 Fev" },
-  { name: "Balıqlar", symbol: "♓", date: "19 Fev — 20 Mar" },
-];
+const PERIODS = [
+  { key: "daily", label: "Günlük" },
+  { key: "weekly", label: "Həftəlik" },
+  { key: "monthly", label: "Aylıq" },
+] as const;
 
-function HoroskopPage() {
+function HoroscopePage() {
+  const [sign, setSign] = useState<string>("Aslan");
+  const [period, setPeriod] = useState<string>("daily");
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["horoscope", sign, period],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("horoscopes")
+        .select("*")
+        .eq("sign", sign)
+        .eq("period", period)
+        .order("period_start", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   return (
-    <div className="min-h-screen bg-ink text-white font-sans antialiased">
-      <nav className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5">
-          <span className="size-8 grid place-items-center rounded-full border border-gold/40 text-gold text-sm">☾</span>
-          <span className="font-display text-2xl tracking-wide">Ruh</span>
-          <span className="text-mist text-xs tracking-[0.3em] uppercase ml-1">Astrolojiya</span>
-        </Link>
-        <div className="hidden md:flex items-center gap-8 text-sm text-mist">
-          <Link to="/horoskop" className="text-white hover:text-goldsoft transition">Horoskop</Link>
-          <Link to="/qezet" className="hover:text-goldsoft transition">Qəzet</Link>
-          <Link to="/astroloq" className="hover:text-goldsoft transition">Astroloq</Link>
-          <Link to="/metnu" className="hover:text-goldsoft transition">Mətnu</Link>
+    <Page>
+      <PageHeader
+        kicker="Horoskop"
+        title="Bürcünü seç, səmanı oxu"
+        subtitle="Günlük, həftəlik və aylıq proqnozlar sevgi, karyera və maliyyə göstəriciləri ilə birlikdə."
+      />
+
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-8">
+        {SIGNS_AZ.map((s) => (
+          <button key={s} type="button" onClick={() => setSign(s)}
+            className={`rounded-2xl border p-4 text-center transition ${
+              sign === s ? "border-gold bg-gold/10" : "border-white/10 bg-celestial-card/40 hover:border-gold/40"
+            }`}>
+            <div className="text-2xl text-goldsoft">{SIGN_SYMBOLS[s]}</div>
+            <div className="text-xs mt-1.5 text-mist">{s}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-2 mb-6">
+        {PERIODS.map((p) => (
+          <button key={p.key} type="button" onClick={() => setPeriod(p.key)}
+            className={`text-sm px-5 py-2 rounded-full border transition ${
+              period === p.key ? "border-gold bg-gold/15 text-goldsoft" : "border-white/10 text-mist hover:border-gold/40"
+            }`}>
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      <section className="rounded-3xl border border-white/10 bg-gradient-to-b from-ink2 to-ink p-6 md:p-8">
+        <div className="flex items-center gap-3">
+          <span className="text-4xl text-gold">{SIGN_SYMBOLS[sign]}</span>
+          <div>
+            <h2 className="font-display text-3xl">{sign}</h2>
+            <p className="text-mist text-xs tracking-widest uppercase">
+              {PERIODS.find((p) => p.key === period)?.label} proqnoz
+            </p>
+          </div>
         </div>
-        <button type="button" className="text-sm px-4 py-2 rounded-full border border-gold/50 text-goldsoft hover:bg-gold/10 transition">Daxil ol</button>
-      </nav>
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
-        <p className="text-gold text-xs tracking-[0.35em] uppercase mb-3">Gündəlik bürclər</p>
-        <h1 className="font-display text-4xl md:text-5xl max-w-2xl">Bu gün səmavi xəritən nə deyir?</h1>
+        {isLoading && <p className="text-mist mt-6">Yüklənir…</p>}
+        {!isLoading && !data && <p className="text-mist mt-6">Bu dövr üçün proqnoz hələ hazır deyil.</p>}
 
-        <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {signs.map((sign) => (
-            <div
-              key={sign.name}
-              className="rounded-2xl bg-celestial-card/60 border border-white/5 p-5 flex flex-col items-center text-center hover:border-gold/30 transition"
-            >
-              <span className="text-3xl text-goldsoft">{sign.symbol}</span>
-              <h3 className="font-display text-xl mt-3">{sign.name}</h3>
-              <p className="text-mist text-xs mt-1">{sign.date}</p>
+        {data && (
+          <>
+            <p className="mt-5 text-[15px] leading-relaxed text-white/85 max-w-3xl">{data.content}</p>
+            <div className="grid grid-cols-3 gap-3 mt-6 max-w-xl">
+              <Meter label="Sevgi" value={data.love} />
+              <Meter label="Karyera" value={data.career} />
+              <Meter label="Maliyyə" value={data.finance} />
             </div>
-          ))}
-        </div>
-      </main>
+          </>
+        )}
+      </section>
+    </Page>
+  );
+}
+
+function Meter({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl bg-celestial-card/60 border border-white/5 p-4">
+      <div className="text-mist text-xs mb-2">{label}</div>
+      <div className="font-display text-3xl text-goldsoft">
+        {value}
+        <span className="text-base text-mist">%</span>
+      </div>
+      <div className="mt-3 h-1.5 rounded-full bg-white/10 overflow-hidden">
+        <div className="h-full bg-gold" style={{ width: `${value}%` }} />
+      </div>
     </div>
   );
 }

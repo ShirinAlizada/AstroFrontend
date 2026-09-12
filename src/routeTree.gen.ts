@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AstroloqRouteImport } from './routes/astroloq'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as ForumRouteImport } from './routes/forum'
 import { Route as HoroskopRouteImport } from './routes/horoskop'
 import { Route as MetnuRouteImport } from './routes/metnu'
 import { Route as QezetRouteImport } from './routes/qezet'
@@ -22,6 +21,7 @@ import { Route as AuthenticatedJurnalRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated/profil'
 import { Route as AuthenticatedRezervasiyalarRouteImport } from './routes/_authenticated/rezervasiyalar'
 import { Route as AuthenticatedXeriteRouteImport } from './routes/_authenticated/xerite'
+import { Route as ForumIndexRouteImport } from './routes/forum.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,11 +40,6 @@ const AstroloqRoute = AstroloqRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForumRoute = ForumRouteImport.update({
-  id: '/forum',
-  path: '/forum',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HoroskopRoute = HoroskopRouteImport.update({
@@ -88,12 +83,16 @@ const AuthenticatedXeriteRoute = AuthenticatedXeriteRouteImport.update({
   path: '/xerite',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ForumIndexRoute = ForumIndexRouteImport.update({
+  id: '/forum/',
+  path: '/forum/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/astroloq': typeof AstroloqRoute
   '/auth': typeof AuthRoute
-  '/forum': typeof ForumRoute
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
   '/qezet': typeof QezetRoute
@@ -102,12 +101,12 @@ export interface FileRoutesByFullPath {
   '/profil': typeof AuthenticatedProfilRoute
   '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/xerite': typeof AuthenticatedXeriteRoute
+  '/forum/': typeof ForumIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/astroloq': typeof AstroloqRoute
   '/auth': typeof AuthRoute
-  '/forum': typeof ForumRoute
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
   '/qezet': typeof QezetRoute
@@ -116,6 +115,7 @@ export interface FileRoutesByTo {
   '/profil': typeof AuthenticatedProfilRoute
   '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/xerite': typeof AuthenticatedXeriteRoute
+  '/forum': typeof ForumIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -123,7 +123,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/astroloq': typeof AstroloqRoute
   '/auth': typeof AuthRoute
-  '/forum': typeof ForumRoute
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
   '/qezet': typeof QezetRoute
@@ -132,6 +131,7 @@ export interface FileRoutesById {
   '/_authenticated/profil': typeof AuthenticatedProfilRoute
   '/_authenticated/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/_authenticated/xerite': typeof AuthenticatedXeriteRoute
+  '/forum/': typeof ForumIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -139,7 +139,6 @@ export interface FileRouteTypes {
     | '/'
     | '/astroloq'
     | '/auth'
-    | '/forum'
     | '/horoskop'
     | '/metnu'
     | '/qezet'
@@ -148,12 +147,12 @@ export interface FileRouteTypes {
     | '/profil'
     | '/rezervasiyalar'
     | '/xerite'
+    | '/forum/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/astroloq'
     | '/auth'
-    | '/forum'
     | '/horoskop'
     | '/metnu'
     | '/qezet'
@@ -162,13 +161,13 @@ export interface FileRouteTypes {
     | '/profil'
     | '/rezervasiyalar'
     | '/xerite'
+    | '/forum'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/astroloq'
     | '/auth'
-    | '/forum'
     | '/horoskop'
     | '/metnu'
     | '/qezet'
@@ -177,6 +176,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profil'
     | '/_authenticated/rezervasiyalar'
     | '/_authenticated/xerite'
+    | '/forum/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,11 +184,11 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AstroloqRoute: typeof AstroloqRoute
   AuthRoute: typeof AuthRoute
-  ForumRoute: typeof ForumRoute
   HoroskopRoute: typeof HoroskopRoute
   MetnuRoute: typeof MetnuRoute
   QezetRoute: typeof QezetRoute
   UygunluqRoute: typeof UygunluqRoute
+  ForumIndexRoute: typeof ForumIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -219,13 +219,6 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forum': {
-      id: '/forum'
-      path: '/forum'
-      fullPath: '/forum'
-      preLoaderRoute: typeof ForumRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/horoskop': {
@@ -284,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedXeriteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/forum/': {
+      id: '/forum/'
+      path: '/forum'
+      fullPath: '/forum/'
+      preLoaderRoute: typeof ForumIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -309,11 +309,11 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AstroloqRoute: AstroloqRoute,
   AuthRoute: AuthRoute,
-  ForumRoute: ForumRoute,
   HoroskopRoute: HoroskopRoute,
   MetnuRoute: MetnuRoute,
   QezetRoute: QezetRoute,
   UygunluqRoute: UygunluqRoute,
+  ForumIndexRoute: ForumIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
