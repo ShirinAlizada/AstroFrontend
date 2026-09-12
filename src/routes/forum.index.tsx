@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Page, PageHeader } from "@/components/Page";
 import { useAuth } from "@/hooks/useAuth";
 
-export const Route = createFileRoute("/forum")({
+export const Route = createFileRoute("/forum/")({
   head: () => ({
     meta: [
       { title: "Forum — Ruh Astrolojiya" },
