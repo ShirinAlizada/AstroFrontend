@@ -16,7 +16,9 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as HoroskopRouteImport } from './routes/horoskop'
 import { Route as MetnuRouteImport } from './routes/metnu'
 import { Route as QezetRouteImport } from './routes/qezet'
+import { Route as AuthenticatedJurnalRouteImport } from './routes/_authenticated/jurnal'
 import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated/profil'
+import { Route as AuthenticatedRezervasiyalarRouteImport } from './routes/_authenticated/rezervasiyalar'
 import { Route as AuthenticatedXeriteRouteImport } from './routes/_authenticated/xerite'
 
 const IndexRoute = IndexRouteImport.update({
@@ -53,11 +55,22 @@ const QezetRoute = QezetRouteImport.update({
   path: '/qezet',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedJurnalRoute = AuthenticatedJurnalRouteImport.update({
+  id: '/jurnal',
+  path: '/jurnal',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProfilRoute = AuthenticatedProfilRouteImport.update({
   id: '/profil',
   path: '/profil',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRezervasiyalarRoute =
+  AuthenticatedRezervasiyalarRouteImport.update({
+    id: '/rezervasiyalar',
+    path: '/rezervasiyalar',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedXeriteRoute = AuthenticatedXeriteRouteImport.update({
   id: '/xerite',
   path: '/xerite',
@@ -71,7 +84,9 @@ export interface FileRoutesByFullPath {
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
   '/qezet': typeof QezetRoute
+  '/jurnal': typeof AuthenticatedJurnalRoute
   '/profil': typeof AuthenticatedProfilRoute
+  '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/xerite': typeof AuthenticatedXeriteRoute
 }
 export interface FileRoutesByTo {
@@ -81,7 +96,9 @@ export interface FileRoutesByTo {
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
   '/qezet': typeof QezetRoute
+  '/jurnal': typeof AuthenticatedJurnalRoute
   '/profil': typeof AuthenticatedProfilRoute
+  '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/xerite': typeof AuthenticatedXeriteRoute
 }
 export interface FileRoutesById {
@@ -93,7 +110,9 @@ export interface FileRoutesById {
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
   '/qezet': typeof QezetRoute
+  '/_authenticated/jurnal': typeof AuthenticatedJurnalRoute
   '/_authenticated/profil': typeof AuthenticatedProfilRoute
+  '/_authenticated/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/_authenticated/xerite': typeof AuthenticatedXeriteRoute
 }
 export interface FileRouteTypes {
@@ -105,7 +124,9 @@ export interface FileRouteTypes {
     | '/horoskop'
     | '/metnu'
     | '/qezet'
+    | '/jurnal'
     | '/profil'
+    | '/rezervasiyalar'
     | '/xerite'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -115,7 +136,9 @@ export interface FileRouteTypes {
     | '/horoskop'
     | '/metnu'
     | '/qezet'
+    | '/jurnal'
     | '/profil'
+    | '/rezervasiyalar'
     | '/xerite'
   id:
     | '__root__'
@@ -126,7 +149,9 @@ export interface FileRouteTypes {
     | '/horoskop'
     | '/metnu'
     | '/qezet'
+    | '/_authenticated/jurnal'
     | '/_authenticated/profil'
+    | '/_authenticated/rezervasiyalar'
     | '/_authenticated/xerite'
   fileRoutesById: FileRoutesById
 }
@@ -191,11 +216,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QezetRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/jurnal': {
+      id: '/_authenticated/jurnal'
+      path: '/jurnal'
+      fullPath: '/jurnal'
+      preLoaderRoute: typeof AuthenticatedJurnalRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/profil': {
       id: '/_authenticated/profil'
       path: '/profil'
       fullPath: '/profil'
       preLoaderRoute: typeof AuthenticatedProfilRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rezervasiyalar': {
+      id: '/_authenticated/rezervasiyalar'
+      path: '/rezervasiyalar'
+      fullPath: '/rezervasiyalar'
+      preLoaderRoute: typeof AuthenticatedRezervasiyalarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/xerite': {
@@ -209,12 +248,16 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedJurnalRoute: typeof AuthenticatedJurnalRoute
   AuthenticatedProfilRoute: typeof AuthenticatedProfilRoute
+  AuthenticatedRezervasiyalarRoute: typeof AuthenticatedRezervasiyalarRoute
   AuthenticatedXeriteRoute: typeof AuthenticatedXeriteRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedJurnalRoute: AuthenticatedJurnalRoute,
   AuthenticatedProfilRoute: AuthenticatedProfilRoute,
+  AuthenticatedRezervasiyalarRoute: AuthenticatedRezervasiyalarRoute,
   AuthenticatedXeriteRoute: AuthenticatedXeriteRoute,
 }
 
