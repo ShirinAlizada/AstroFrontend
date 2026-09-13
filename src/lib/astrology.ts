@@ -1,4 +1,3 @@
-// @ts-expect-error - kitabxananın tip faylı yoxdur
 import { Origin, Horoscope } from "circular-natal-horoscope-js";
 
 export const SIGNS_AZ = [
@@ -131,15 +130,20 @@ function az(signKey: string | undefined): string {
 }
 
 export function computeNatalChart(input: BirthInput): NatalChart {
-  const [year, month, day] = input.date.split("-").map(Number);
-  const [hour, minute] = input.time.split(":").map(Number);
+  const [y, mo, d] = input.date.split("-").map(Number);
+  const [h, mi] = input.time.split(":").map(Number);
+  const year = y ?? 2000;
+  const month = (mo ?? 1) - 1; // 0-əsaslı
+  const day = d ?? 1;
+  const hour = h ?? 12;
+  const minute = mi ?? 0;
 
   const origin = new Origin({
     year,
-    month: (month ?? 1) - 1, // 0-əsaslı
+    month,
     date: day,
-    hour: hour ?? 12,
-    minute: minute ?? 0,
+    hour,
+    minute,
     latitude: input.latitude,
     longitude: input.longitude,
   });
@@ -159,7 +163,7 @@ export function computeNatalChart(input: BirthInput): NatalChart {
     .map((b) => ({
       name: BODY_EN_TO_AZ[String(b.key).toLowerCase()] ?? b.label,
       sign: az(b.Sign?.key),
-      degree: Number(b.ChartPosition?.Ecliptic?.ArcDegrees?.degrees ?? 0),
+      degree: Math.floor(Number(b.ChartPosition?.Ecliptic?.DecimalDegrees ?? 0) % 30),
       house: b.House?.id ?? null,
       retrograde: Boolean(b.isRetrograde),
     }));
@@ -167,7 +171,7 @@ export function computeNatalChart(input: BirthInput): NatalChart {
   const houses: HousePosition[] = (horoscope.Houses as any[]).map((h, i) => ({
     index: i + 1,
     sign: az(h.Sign?.key),
-    degree: Number(h.ChartPosition?.StartPosition?.Ecliptic?.ArcDegrees?.degrees ?? 0),
+    degree: Math.floor(Number(h.ChartPosition?.StartPosition?.Ecliptic?.DecimalDegrees ?? 0) % 30),
   }));
 
   const ascRaw = horoscope.Ascendant as any;
@@ -178,11 +182,11 @@ export function computeNatalChart(input: BirthInput): NatalChart {
     houses,
     ascendant: {
       sign: az(ascRaw?.Sign?.key),
-      degree: Number(ascRaw?.ChartPosition?.Horizon?.DecimalDegrees ?? 0),
+      degree: houses[0]?.degree ?? 0,
     },
     midheaven: {
       sign: az(mcRaw?.Sign?.key),
-      degree: Number(mcRaw?.ChartPosition?.Horizon?.DecimalDegrees ?? 0),
+      degree: houses[9]?.degree ?? 0,
     },
     sun: planets.find((p) => p.name === "Günəş")?.sign ?? "—",
     moon: planets.find((p) => p.name === "Ay")?.sign ?? "—",

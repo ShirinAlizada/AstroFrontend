@@ -17,6 +17,7 @@ import { Route as HoroskopRouteImport } from './routes/horoskop'
 import { Route as MetnuRouteImport } from './routes/metnu'
 import { Route as QezetRouteImport } from './routes/qezet'
 import { Route as UygunluqRouteImport } from './routes/uygunluq'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedJurnalRouteImport } from './routes/_authenticated/jurnal'
 import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated/profil'
 import { Route as AuthenticatedRezervasiyalarRouteImport } from './routes/_authenticated/rezervasiyalar'
@@ -63,6 +64,11 @@ const UygunluqRoute = UygunluqRouteImport.update({
   path: '/uygunluq',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedJurnalRoute = AuthenticatedJurnalRouteImport.update({
   id: '/jurnal',
   path: '/jurnal',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/metnu': typeof MetnuRoute
   '/qezet': typeof QezetRoute
   '/uygunluq': typeof UygunluqRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/jurnal': typeof AuthenticatedJurnalRoute
   '/profil': typeof AuthenticatedProfilRoute
   '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/metnu': typeof MetnuRoute
   '/qezet': typeof QezetRoute
   '/uygunluq': typeof UygunluqRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/jurnal': typeof AuthenticatedJurnalRoute
   '/profil': typeof AuthenticatedProfilRoute
   '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/metnu': typeof MetnuRoute
   '/qezet': typeof QezetRoute
   '/uygunluq': typeof UygunluqRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/jurnal': typeof AuthenticatedJurnalRoute
   '/_authenticated/profil': typeof AuthenticatedProfilRoute
   '/_authenticated/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/metnu'
     | '/qezet'
     | '/uygunluq'
+    | '/admin'
     | '/jurnal'
     | '/profil'
     | '/rezervasiyalar'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/metnu'
     | '/qezet'
     | '/uygunluq'
+    | '/admin'
     | '/jurnal'
     | '/profil'
     | '/rezervasiyalar'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/metnu'
     | '/qezet'
     | '/uygunluq'
+    | '/_authenticated/admin'
     | '/_authenticated/jurnal'
     | '/_authenticated/profil'
     | '/_authenticated/rezervasiyalar'
@@ -262,6 +274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UygunluqRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/jurnal': {
       id: '/_authenticated/jurnal'
       path: '/jurnal'
@@ -308,6 +327,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedJurnalRoute: typeof AuthenticatedJurnalRoute
   AuthenticatedProfilRoute: typeof AuthenticatedProfilRoute
   AuthenticatedRezervasiyalarRoute: typeof AuthenticatedRezervasiyalarRoute
@@ -315,6 +335,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedJurnalRoute: AuthenticatedJurnalRoute,
   AuthenticatedProfilRoute: AuthenticatedProfilRoute,
   AuthenticatedRezervasiyalarRoute: AuthenticatedRezervasiyalarRoute,

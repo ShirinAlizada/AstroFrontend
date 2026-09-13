@@ -104,7 +104,7 @@ function ProfilePage() {
 
       const { error: cErr } = await supabase
         .from("natal_charts")
-        .upsert({ user_id: uid, chart: chart as unknown as Record<string, unknown> }, { onConflict: "user_id" });
+        .upsert({ user_id: uid, chart: JSON.parse(JSON.stringify(chart)) }, { onConflict: "user_id" });
       if (cErr) throw cErr;
 
       await queryClient.invalidateQueries();
@@ -190,7 +190,7 @@ function ProfilePage() {
   );
 }
 
-function Row({ label, value }: { label: string; value?: string | null }) {
+function Row({ label, value }: { label: string; value?: string | null | undefined }) {
   return (
     <div className="flex items-center justify-between border-b border-white/5 pb-2">
       <span className="text-mist">{label}</span>

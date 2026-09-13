@@ -1,59 +1,142 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Star } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Page, PageHeader } from "@/components/Page";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/astroloq")({
   head: () => ({
     meta: [
-      { title: "Astroloq — Ruh Astrolojiya" },
-      { name: "description", content: "Ruh Astrolojiya komandası və astroloqların təqdimatı." },
-      { property: "og:title", content: "Astroloq — Ruh Astrolojiya" },
-      { property: "og:description", content: "Ruh Astrolojiya komandası və astroloqların təqdimatı." },
+      { title: "Astroloqlar və rezervasiya — Ruh Astrolojiya" },
+      { name: "description", content: "Təsdiqlənmiş astroloqlarla canlı və ya yazılı konsultasiya seansı rezerv et." },
+      { property: "og:title", content: "Astroloqlar və rezervasiya — Ruh Astrolojiya" },
+      { property: "og:description", content: "Peşəkar astroloqlarla seans rezervasiyası." },
+      { property: "og:type", content: "website" },
     ],
   }),
-  component: AstroloqPage,
+  component: AstrologersPage,
 });
 
-function AstroloqPage() {
+function AstrologersPage() {
+  const { user } = useAuth();
+  const [selected, setSelected] = useState<string | null>(null);
+  const [form, setForm] = useState({ session_type: "live", scheduled_at: "", note: "" });
+
+  const { data: astrologers, isLoading } = useQuery({
+    queryKey: ["astrologers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("astrologers")
+        .select("*")
+        .eq("verified", true)
+        .order("rating", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const book = useMutation({
+    mutationFn: async () => {
+      if (!selected) throw new Error("Astroloq seçin");
+      if (!form.scheduled_at) throw new Error("Tarix və saat seçin");
+      if (new Date(form.scheduled_at).getTime() < Date.now()) throw new Error("Gələcək bir vaxt seçin");
+      if (form.note.length > 500) throw new Error("Qeyd çox uzundur");
+      const { data: auth } = await supabase.auth.getUser();
+      const { error } = await supabase.from("bookings").insert({
+        user_id: auth.user!.id,
+        astrologer_id: selected,
+        session_type: form.session_type,
+        scheduled_at: new Date(form.scheduled_at).toISOString(),
+        note: form.note || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Rezervasiya göndərildi");
+      setSelected(null);
+      setForm({ session_type: "live", scheduled_at: "", note: "" });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
-    <div className="min-h-screen bg-ink text-white font-sans antialiased">
-      <nav className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5">
-          <span className="size-8 grid place-items-center rounded-full border border-gold/40 text-gold text-sm">☾</span>
-          <span className="font-display text-2xl tracking-wide">Ruh</span>
-          <span className="text-mist text-xs tracking-[0.3em] uppercase ml-1">Astrolojiya</span>
-        </Link>
-        <div className="hidden md:flex items-center gap-8 text-sm text-mist">
-          <Link to="/horoskop" className="hover:text-goldsoft transition">Horoskop</Link>
-          <Link to="/qezet" className="hover:text-goldsoft transition">Qəzet</Link>
-          <Link to="/astroloq" className="text-white hover:text-goldsoft transition">Astroloq</Link>
-          <Link to="/metnu" className="hover:text-goldsoft transition">Mətnu</Link>
-        </div>
-        <button type="button" className="text-sm px-4 py-2 rounded-full border border-gold/50 text-goldsoft hover:bg-gold/10 transition">Daxil ol</button>
-      </nav>
+    <Page>
+      <PageHeader
+        kicker="Astroloqlar"
+        title="Peşəkar məsləhət al"
+        subtitle="Təsdiqlənmiş astroloqlarla canlı seans və ya yazılı təhlil üçün vaxt seç."
+      />
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
-        <p className="text-gold text-xs tracking-[0.35em] uppercase mb-3">Komanda</p>
-        <h1 className="font-display text-4xl md:text-5xl max-w-2xl">Səmavi xəritələrin arxasındakı insanlar</h1>
+      {isLoading && <p className="text-mist">Yüklənir…</p>}
 
-        <div className="mt-10 grid md:grid-cols-2 gap-6">
-          <div className="rounded-2xl bg-celestial-card/60 border border-white/5 p-8">
-            <div className="size-20 rounded-full bg-gradient-to-br from-gold/30 to-violet/30 grid place-items-center text-3xl">☾</div>
-            <h2 className="font-display text-3xl mt-6">Leyla Ruh</h2>
-            <p className="text-goldsoft text-sm mt-1">Baş astroloq · 12 illik təcrübə</p>
-            <p className="mt-4 text-mist leading-relaxed">
-              Leyla Qərb və Vedic astrolojiyasını birləşdirərək, hər bir xəritəyə dərin və şəxsi mənada yanaşır.
-            </p>
-          </div>
+      <div className="grid md:grid-cols-3 gap-5">
+        {astrologers?.map((a) => (
+          <article key={a.id} className="rounded-2xl bg-celestial-card/60 border border-white/5 p-6 flex flex-col">
+            <div className="size-14 rounded-full grid place-items-center border border-gold/40 text-gold text-xl">
+              {a.display_name.charAt(0)}
+            </div>
+            <h2 className="font-display text-2xl mt-4">{a.display_name}</h2>
+            <p className="text-gold text-xs tracking-widest uppercase mt-1">{a.title}</p>
+            <p className="text-sm text-mist mt-3 leading-relaxed flex-1">{a.bio}</p>
+            <div className="flex flex-wrap gap-1.5 mt-4">
+              {a.specialties.map((s) => (
+                <span key={s} className="text-xs px-2.5 py-1 rounded-full border border-violet/30 text-violet">{s}</span>
+              ))}
+            </div>
+            <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/5">
+              <span className="flex items-center gap-1 text-sm text-goldsoft">
+                <Star className="size-4 fill-current" /> {a.rating}
+              </span>
+              <span className="text-sm text-white">{a.price_azn} ₼ / seans</span>
+            </div>
+            <button type="button" onClick={() => setSelected(selected === a.id ? null : a.id)}
+              className="mt-4 w-full px-5 py-2.5 rounded-full bg-gold text-ink font-semibold text-sm hover:bg-goldsoft transition">
+              {selected === a.id ? "Bağla" : "Vaxt seç"}
+            </button>
 
-          <div className="rounded-2xl bg-celestial-card/60 border border-white/5 p-8">
-            <div className="size-20 rounded-full bg-gradient-to-br from-violet/30 to-gold/30 grid place-items-center text-3xl">✦</div>
-            <h2 className="font-display text-3xl mt-6">Emil Səmavi</h2>
-            <p className="text-goldsoft text-sm mt-1">Transit təhlilçisi · 8 illik təcrübə</p>
-            <p className="mt-4 text-mist leading-relaxed">
-              Emil gündəlik planet hərəkətlərini sadə və praktik dilə çevirməkdə ixtisaslaşıb.
-            </p>
-          </div>
-        </div>
-      </main>
-    </div>
+            {selected === a.id && (
+              <div className="mt-4 border-t border-white/5 pt-4">
+                {user ? (
+                  <form onSubmit={(e) => { e.preventDefault(); book.mutate(); }} className="space-y-3">
+                    <div>
+                      <label htmlFor={`type-${a.id}`} className="block text-xs text-mist mb-1.5">Seans növü</label>
+                      <select id={`type-${a.id}`} value={form.session_type}
+                        onChange={(e) => setForm({ ...form, session_type: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gold/50">
+                        <option value="live" className="bg-ink">Canlı seans</option>
+                        <option value="written" className="bg-ink">Yazılı təhlil</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor={`when-${a.id}`} className="block text-xs text-mist mb-1.5">Tarix və saat</label>
+                      <input id={`when-${a.id}`} type="datetime-local" value={form.scheduled_at}
+                        onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gold/50" />
+                    </div>
+                    <div>
+                      <label htmlFor={`note-${a.id}`} className="block text-xs text-mist mb-1.5">Qeyd</label>
+                      <textarea id={`note-${a.id}`} rows={2} value={form.note} maxLength={500}
+                        onChange={(e) => setForm({ ...form, note: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:border-gold/50" />
+                    </div>
+                    <button type="submit" disabled={book.isPending}
+                      className="w-full px-5 py-2.5 rounded-full border border-gold/50 text-goldsoft text-sm hover:bg-gold/10 transition disabled:opacity-60">
+                      Rezerv et
+                    </button>
+                  </form>
+                ) : (
+                  <p className="text-sm text-mist">
+                    Rezervasiya üçün <Link to="/auth" className="text-goldsoft hover:text-gold">daxil ol</Link>.
+                  </p>
+                )}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    </Page>
   );
 }
