@@ -166,8 +166,8 @@ function PersonCard({
   title: string;
   person: PersonForm;
   setPerson: (p: PersonForm) => void;
-  locked?: boolean;
-  lockedText?: string;
+  locked?: boolean | undefined;
+  lockedText?: string | undefined;
 }) {
   const id = title.replace(/\s/g, "-");
   return (

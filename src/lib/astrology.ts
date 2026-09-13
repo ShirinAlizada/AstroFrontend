@@ -1,4 +1,3 @@
-// @ts-expect-error - kitabxananın tip faylı yoxdur
 import { Origin, Horoscope } from "circular-natal-horoscope-js";
 
 export const SIGNS_AZ = [
@@ -131,15 +130,20 @@ function az(signKey: string | undefined): string {
 }
 
 export function computeNatalChart(input: BirthInput): NatalChart {
-  const [year, month, day] = input.date.split("-").map(Number);
-  const [hour, minute] = input.time.split(":").map(Number);
+  const [y, mo, d] = input.date.split("-").map(Number);
+  const [h, mi] = input.time.split(":").map(Number);
+  const year = y ?? 2000;
+  const month = (mo ?? 1) - 1; // 0-əsaslı
+  const day = d ?? 1;
+  const hour = h ?? 12;
+  const minute = mi ?? 0;
 
   const origin = new Origin({
     year,
-    month: (month ?? 1) - 1, // 0-əsaslı
+    month,
     date: day,
-    hour: hour ?? 12,
-    minute: minute ?? 0,
+    hour,
+    minute,
     latitude: input.latitude,
     longitude: input.longitude,
   });
