@@ -138,38 +138,56 @@ function Index() {
             </div>
           </div>
           <Link
-            to="/metnu"
+            to="/uygunluq"
             className="md:ml-auto text-sm px-5 py-3 rounded-full bg-gold text-ink font-semibold hover:bg-goldsoft transition"
           >
-            Tam tahlil
+            Tam təhlil
           </Link>
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="mx-auto max-w-6xl px-6 pb-16">
-        <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-celestial-card/70 to-ink2 p-8 md:p-10 text-center">
-          <h3 className="font-display text-3xl md:text-4xl">
-            Doğum vaxtını yaz, səmavi qəzeti oxu
-          </h3>
-          <form
-            className="mt-6 max-w-md mx-auto flex gap-2"
-            onSubmit={(e) => e.preventDefault()}
-          >
-            <input
-              type="email"
-              placeholder="E-poçt ünvanın"
-              className="flex-1 px-4 py-3 rounded-full bg-white/5 border border-white/10 text-sm placeholder:text-mist/70 focus:outline-none focus:border-gold/50"
-            />
-            <button
-              type="submit"
-              className="px-5 py-3 rounded-full bg-gold text-ink font-semibold text-sm hover:bg-goldsoft transition"
+      {/* FEATURES */}
+      <div className="mx-auto max-w-6xl px-6 py-6">
+        <p className="text-gold text-xs tracking-[0.35em] uppercase mb-4">Platforma</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            { to: "/profil", t: "Profil və doğum məlumatı", d: "Doğum tarixi, dəqiq saat və yer əsasında şəxsi hesab." },
+            { to: "/xerite", t: "Natal xəritə", d: "Günəş, Ay və planetlərin bürc və ev mövqeləri." },
+            { to: "/horoskop", t: "Horoskop lentləri", d: "Günlük, həftəlik və aylıq proqnozlar." },
+            { to: "/uygunluq", t: "Uyğunluq (sinastriya)", d: "İki xəritənin müqayisəsi və uyğunluq balı." },
+            { to: "/astroloq", t: "Astroloq rezervasiyası", d: "Canlı və ya yazılı konsultasiya üçün vaxt seç." },
+            { to: "/jurnal", t: "Tranzit jurnalı", d: "Əhvalını yaz, planet təsirlərini izlə." },
+            { to: "/forum", t: "İcma forumu", d: "Tranzitlər və xəritə oxunuşları üzrə müzakirə." },
+            { to: "/qezet", t: "Səmavi qəzet", d: "Astroloji məqalələr və təhlillər." },
+          ].map((f) => (
+            <Link
+              key={f.to}
+              to={f.to}
+              className="rounded-2xl bg-celestial-card/60 border border-white/5 p-5 hover:border-gold/30 transition"
             >
-              Başla
-            </button>
-          </form>
+              <h3 className="font-display text-xl">{f.t}</h3>
+              <p className="text-sm text-mist mt-1.5 leading-relaxed">{f.d}</p>
+            </Link>
+          ))}
         </div>
       </div>
+
+      {/* CTA */}
+      <div className="mx-auto max-w-6xl px-6 py-16">
+        <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-celestial-card/70 to-ink2 p-8 md:p-10 text-center">
+          <h3 className="font-display text-3xl md:text-4xl">
+            Doğum vaxtını yaz, natal xəritəni gör
+          </h3>
+          <p className="text-mist text-sm mt-3">Qeydiyyat pulsuzdur — xəritən dərhal hesablanır.</p>
+          <Link
+            to="/auth"
+            className="inline-block mt-6 px-6 py-3 rounded-full bg-gold text-ink font-semibold text-sm hover:bg-goldsoft transition"
+          >
+            Başla
+          </Link>
+        </div>
+      </div>
+
     </div>
   );
 }
