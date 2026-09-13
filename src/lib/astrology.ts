@@ -182,11 +182,11 @@ export function computeNatalChart(input: BirthInput): NatalChart {
     houses,
     ascendant: {
       sign: az(ascRaw?.Sign?.key),
-      degree: Math.floor(Number(ascRaw?.ChartPosition?.Horizon?.DecimalDegrees ?? 0) % 30),
+      degree: houses[0]?.degree ?? 0,
     },
     midheaven: {
       sign: az(mcRaw?.Sign?.key),
-      degree: Math.floor(Number(mcRaw?.ChartPosition?.Horizon?.DecimalDegrees ?? 0) % 30),
+      degree: houses[9]?.degree ?? 0,
     },
     sun: planets.find((p) => p.name === "Günəş")?.sign ?? "—",
     moon: planets.find((p) => p.name === "Ay")?.sign ?? "—",
