@@ -163,7 +163,7 @@ export function computeNatalChart(input: BirthInput): NatalChart {
     .map((b) => ({
       name: BODY_EN_TO_AZ[String(b.key).toLowerCase()] ?? b.label,
       sign: az(b.Sign?.key),
-      degree: Number(b.ChartPosition?.Ecliptic?.ArcDegrees?.degrees ?? 0),
+      degree: Math.floor(Number(b.ChartPosition?.Ecliptic?.DecimalDegrees ?? 0) % 30),
       house: b.House?.id ?? null,
       retrograde: Boolean(b.isRetrograde),
     }));
@@ -171,7 +171,7 @@ export function computeNatalChart(input: BirthInput): NatalChart {
   const houses: HousePosition[] = (horoscope.Houses as any[]).map((h, i) => ({
     index: i + 1,
     sign: az(h.Sign?.key),
-    degree: Number(h.ChartPosition?.StartPosition?.Ecliptic?.ArcDegrees?.degrees ?? 0),
+    degree: Math.floor(Number(h.ChartPosition?.StartPosition?.Ecliptic?.DecimalDegrees ?? 0) % 30),
   }));
 
   const ascRaw = horoscope.Ascendant as any;
@@ -182,11 +182,11 @@ export function computeNatalChart(input: BirthInput): NatalChart {
     houses,
     ascendant: {
       sign: az(ascRaw?.Sign?.key),
-      degree: Number(ascRaw?.ChartPosition?.Horizon?.DecimalDegrees ?? 0),
+      degree: Math.floor(Number(ascRaw?.ChartPosition?.Horizon?.DecimalDegrees ?? 0) % 30),
     },
     midheaven: {
       sign: az(mcRaw?.Sign?.key),
-      degree: Number(mcRaw?.ChartPosition?.Horizon?.DecimalDegrees ?? 0),
+      degree: Math.floor(Number(mcRaw?.ChartPosition?.Horizon?.DecimalDegrees ?? 0) % 30),
     },
     sun: planets.find((p) => p.name === "Günəş")?.sign ?? "—",
     moon: planets.find((p) => p.name === "Ay")?.sign ?? "—",
