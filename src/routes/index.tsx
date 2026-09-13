@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { SiteNav } from "@/components/SiteNav";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Ruh Astrolojiya — Səmavi xəritən" },
-      { name: "description", content: "Gündəlik horoskop, doğum xəritəsi və uyğunluq tahlili." },
+      { title: "Ruh Astrolojiya — natal xəritə və horoskop platforması" },
+      { name: "description", content: "Doğum məlumatlarına əsasən natal xəritə, günlük horoskop, uyğunluq təhlili, astroloq rezervasiyası və tranzit jurnalı." },
       { property: "og:title", content: "Ruh Astrolojiya — Səmavi xəritən" },
-      { property: "og:description", content: "Gündəlik horoskop, doğum xəritəsi və uyğunluq tahlili." },
+      { property: "og:description", content: "Natal xəritə, horoskop, uyğunluq, astroloq rezervasiyası və tranzit jurnalı." },
+      { property: "og:type", content: "website" },
     ],
   }),
   component: Index,
@@ -15,38 +17,8 @@ export const Route = createFileRoute("/")({
 function Index() {
   return (
     <div className="min-h-screen bg-ink text-white font-sans antialiased">
-      {/* NAV */}
-      <nav className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5">
-          <span className="size-8 grid place-items-center rounded-full border border-gold/40 text-gold text-sm">
-            ☾
-          </span>
-          <span className="font-display text-2xl tracking-wide">Ruh</span>
-          <span className="text-mist text-xs tracking-[0.3em] uppercase ml-1">
-            Astrolojiya
-          </span>
-        </Link>
-        <div className="hidden md:flex items-center gap-8 text-sm text-mist">
-          <Link to="/horoskop" className="text-white hover:text-goldsoft transition">
-            Horoskop
-          </Link>
-          <Link to="/qezet" className="hover:text-goldsoft transition">
-            Qəzet
-          </Link>
-          <Link to="/astroloq" className="hover:text-goldsoft transition">
-            Astroloq
-          </Link>
-          <Link to="/metnu" className="hover:text-goldsoft transition">
-            Mətnu
-          </Link>
-        </div>
-        <button
-          type="button"
-          className="text-sm px-4 py-2 rounded-full border border-gold/50 text-goldsoft hover:bg-gold/10 transition"
-        >
-          Daxil ol
-        </button>
-      </nav>
+      <SiteNav />
+
 
       {/* HERO APP SCREEN */}
       <div className="mx-auto max-w-6xl px-6 pt-4 pb-6">
