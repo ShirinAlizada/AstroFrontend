@@ -15,7 +15,6 @@ import { Route as AstroloqRouteImport } from './routes/astroloq'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as HoroskopRouteImport } from './routes/horoskop'
 import { Route as MetnuRouteImport } from './routes/metnu'
-import { Route as QezetRouteImport } from './routes/qezet'
 import { Route as UygunluqRouteImport } from './routes/uygunluq'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedJurnalRouteImport } from './routes/_authenticated/jurnal'
@@ -55,11 +54,6 @@ const HoroskopRoute = HoroskopRouteImport.update({
 const MetnuRoute = MetnuRouteImport.update({
   id: '/metnu',
   path: '/metnu',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QezetRoute = QezetRouteImport.update({
-  id: '/qezet',
-  path: '/qezet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UygunluqRoute = UygunluqRouteImport.update({
@@ -127,7 +121,6 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
-  '/qezet': typeof QezetRoute
   '/uygunluq': typeof UygunluqRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/jurnal': typeof AuthenticatedJurnalRoute
@@ -146,7 +139,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
-  '/qezet': typeof QezetRoute
   '/uygunluq': typeof UygunluqRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/jurnal': typeof AuthenticatedJurnalRoute
@@ -167,7 +159,6 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
-  '/qezet': typeof QezetRoute
   '/uygunluq': typeof UygunluqRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/jurnal': typeof AuthenticatedJurnalRoute
@@ -188,7 +179,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/horoskop'
     | '/metnu'
-    | '/qezet'
     | '/uygunluq'
     | '/admin'
     | '/jurnal'
@@ -207,7 +197,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/horoskop'
     | '/metnu'
-    | '/qezet'
     | '/uygunluq'
     | '/admin'
     | '/jurnal'
@@ -227,7 +216,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/horoskop'
     | '/metnu'
-    | '/qezet'
     | '/uygunluq'
     | '/_authenticated/admin'
     | '/_authenticated/jurnal'
@@ -248,7 +236,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   HoroskopRoute: typeof HoroskopRoute
   MetnuRoute: typeof MetnuRoute
-  QezetRoute: typeof QezetRoute
   UygunluqRoute: typeof UygunluqRoute
   ApiAiRoute: typeof ApiAiRoute
   ForumTopicIdRoute: typeof ForumTopicIdRoute
@@ -297,13 +284,6 @@ declare module '@tanstack/react-router' {
       path: '/metnu'
       fullPath: '/metnu'
       preLoaderRoute: typeof MetnuRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/qezet': {
-      id: '/qezet'
-      path: '/qezet'
-      fullPath: '/qezet'
-      preLoaderRoute: typeof QezetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/uygunluq': {
@@ -416,7 +396,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   HoroskopRoute: HoroskopRoute,
   MetnuRoute: MetnuRoute,
-  QezetRoute: QezetRoute,
   UygunluqRoute: UygunluqRoute,
   ApiAiRoute: ApiAiRoute,
   ForumTopicIdRoute: ForumTopicIdRoute,
