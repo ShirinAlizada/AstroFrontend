@@ -22,6 +22,7 @@ import { Route as AuthenticatedJurnalRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated/profil'
 import { Route as AuthenticatedRezervasiyalarRouteImport } from './routes/_authenticated/rezervasiyalar'
 import { Route as AuthenticatedXeriteRouteImport } from './routes/_authenticated/xerite'
+import { Route as ApiAiRouteImport } from './routes/api/ai'
 import { Route as ForumIndexRouteImport } from './routes/forum.index'
 import { Route as ForumTopicIdRouteImport } from './routes/forum.$topicId'
 
@@ -90,6 +91,11 @@ const AuthenticatedXeriteRoute = AuthenticatedXeriteRouteImport.update({
   path: '/xerite',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiAiRoute = ApiAiRouteImport.update({
+  id: '/api/ai',
+  path: '/api/ai',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForumIndexRoute = ForumIndexRouteImport.update({
   id: '/forum/',
   path: '/forum/',
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/profil': typeof AuthenticatedProfilRoute
   '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/xerite': typeof AuthenticatedXeriteRoute
+  '/api/ai': typeof ApiAiRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
   '/forum/': typeof ForumIndexRoute
 }
@@ -130,6 +137,7 @@ export interface FileRoutesByTo {
   '/profil': typeof AuthenticatedProfilRoute
   '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/xerite': typeof AuthenticatedXeriteRoute
+  '/api/ai': typeof ApiAiRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
   '/forum': typeof ForumIndexRoute
 }
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/_authenticated/profil': typeof AuthenticatedProfilRoute
   '/_authenticated/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/_authenticated/xerite': typeof AuthenticatedXeriteRoute
+  '/api/ai': typeof ApiAiRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
   '/forum/': typeof ForumIndexRoute
 }
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/profil'
     | '/rezervasiyalar'
     | '/xerite'
+    | '/api/ai'
     | '/forum/$topicId'
     | '/forum/'
   fileRoutesByTo: FileRoutesByTo
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/profil'
     | '/rezervasiyalar'
     | '/xerite'
+    | '/api/ai'
     | '/forum/$topicId'
     | '/forum'
   id:
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profil'
     | '/_authenticated/rezervasiyalar'
     | '/_authenticated/xerite'
+    | '/api/ai'
     | '/forum/$topicId'
     | '/forum/'
   fileRoutesById: FileRoutesById
@@ -212,6 +224,7 @@ export interface RootRouteChildren {
   MetnuRoute: typeof MetnuRoute
   QezetRoute: typeof QezetRoute
   UygunluqRoute: typeof UygunluqRoute
+  ApiAiRoute: typeof ApiAiRoute
   ForumTopicIdRoute: typeof ForumTopicIdRoute
   ForumIndexRoute: typeof ForumIndexRoute
 }
@@ -309,6 +322,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedXeriteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/ai': {
+      id: '/api/ai'
+      path: '/api/ai'
+      fullPath: '/api/ai'
+      preLoaderRoute: typeof ApiAiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forum/': {
       id: '/forum/'
       path: '/forum'
@@ -354,6 +374,7 @@ const rootRouteChildren: RootRouteChildren = {
   MetnuRoute: MetnuRoute,
   QezetRoute: QezetRoute,
   UygunluqRoute: UygunluqRoute,
+  ApiAiRoute: ApiAiRoute,
   ForumTopicIdRoute: ForumTopicIdRoute,
   ForumIndexRoute: ForumIndexRoute,
 }
