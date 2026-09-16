@@ -15,15 +15,18 @@ import { Route as AstroloqRouteImport } from './routes/astroloq'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as HoroskopRouteImport } from './routes/horoskop'
 import { Route as MetnuRouteImport } from './routes/metnu'
-import { Route as QezetRouteImport } from './routes/qezet'
 import { Route as UygunluqRouteImport } from './routes/uygunluq'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedJurnalRouteImport } from './routes/_authenticated/jurnal'
 import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated/profil'
 import { Route as AuthenticatedRezervasiyalarRouteImport } from './routes/_authenticated/rezervasiyalar'
 import { Route as AuthenticatedXeriteRouteImport } from './routes/_authenticated/xerite'
+import { Route as ApiAiRouteImport } from './routes/api/ai'
 import { Route as ForumIndexRouteImport } from './routes/forum.index'
 import { Route as ForumTopicIdRouteImport } from './routes/forum.$topicId'
+import { Route as QezetIndexRouteImport } from './routes/qezet.index'
+import { Route as AuthenticatedSohbetIndexRouteImport } from './routes/_authenticated/sohbet.index'
+import { Route as AuthenticatedSohbetThreadIdRouteImport } from './routes/_authenticated/sohbet.$threadId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,11 +55,6 @@ const HoroskopRoute = HoroskopRouteImport.update({
 const MetnuRoute = MetnuRouteImport.update({
   id: '/metnu',
   path: '/metnu',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QezetRoute = QezetRouteImport.update({
-  id: '/qezet',
-  path: '/qezet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UygunluqRoute = UygunluqRouteImport.update({
@@ -90,6 +88,11 @@ const AuthenticatedXeriteRoute = AuthenticatedXeriteRouteImport.update({
   path: '/xerite',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiAiRoute = ApiAiRouteImport.update({
+  id: '/api/ai',
+  path: '/api/ai',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForumIndexRoute = ForumIndexRouteImport.update({
   id: '/forum/',
   path: '/forum/',
@@ -100,6 +103,23 @@ const ForumTopicIdRoute = ForumTopicIdRouteImport.update({
   path: '/forum/$topicId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QezetIndexRoute = QezetIndexRouteImport.update({
+  id: '/qezet/',
+  path: '/qezet/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSohbetIndexRoute =
+  AuthenticatedSohbetIndexRouteImport.update({
+    id: '/sohbet/',
+    path: '/sohbet/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSohbetThreadIdRoute =
+  AuthenticatedSohbetThreadIdRouteImport.update({
+    id: '/sohbet/$threadId',
+    path: '/sohbet/$threadId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -107,15 +127,18 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
-  '/qezet': typeof QezetRoute
   '/uygunluq': typeof UygunluqRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/jurnal': typeof AuthenticatedJurnalRoute
   '/profil': typeof AuthenticatedProfilRoute
   '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/xerite': typeof AuthenticatedXeriteRoute
+  '/api/ai': typeof ApiAiRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
   '/forum/': typeof ForumIndexRoute
+  '/qezet/': typeof QezetIndexRoute
+  '/sohbet/$threadId': typeof AuthenticatedSohbetThreadIdRoute
+  '/sohbet/': typeof AuthenticatedSohbetIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -123,15 +146,18 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
-  '/qezet': typeof QezetRoute
   '/uygunluq': typeof UygunluqRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/jurnal': typeof AuthenticatedJurnalRoute
   '/profil': typeof AuthenticatedProfilRoute
   '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/xerite': typeof AuthenticatedXeriteRoute
+  '/api/ai': typeof ApiAiRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
   '/forum': typeof ForumIndexRoute
+  '/qezet': typeof QezetIndexRoute
+  '/sohbet/$threadId': typeof AuthenticatedSohbetThreadIdRoute
+  '/sohbet': typeof AuthenticatedSohbetIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -141,15 +167,18 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
-  '/qezet': typeof QezetRoute
   '/uygunluq': typeof UygunluqRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/jurnal': typeof AuthenticatedJurnalRoute
   '/_authenticated/profil': typeof AuthenticatedProfilRoute
   '/_authenticated/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/_authenticated/xerite': typeof AuthenticatedXeriteRoute
+  '/api/ai': typeof ApiAiRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
   '/forum/': typeof ForumIndexRoute
+  '/qezet/': typeof QezetIndexRoute
+  '/_authenticated/sohbet/$threadId': typeof AuthenticatedSohbetThreadIdRoute
+  '/_authenticated/sohbet/': typeof AuthenticatedSohbetIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -159,15 +188,18 @@ export interface FileRouteTypes {
     | '/auth'
     | '/horoskop'
     | '/metnu'
-    | '/qezet'
     | '/uygunluq'
     | '/admin'
     | '/jurnal'
     | '/profil'
     | '/rezervasiyalar'
     | '/xerite'
+    | '/api/ai'
     | '/forum/$topicId'
     | '/forum/'
+    | '/qezet/'
+    | '/sohbet/$threadId'
+    | '/sohbet/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -175,15 +207,18 @@ export interface FileRouteTypes {
     | '/auth'
     | '/horoskop'
     | '/metnu'
-    | '/qezet'
     | '/uygunluq'
     | '/admin'
     | '/jurnal'
     | '/profil'
     | '/rezervasiyalar'
     | '/xerite'
+    | '/api/ai'
     | '/forum/$topicId'
     | '/forum'
+    | '/qezet'
+    | '/sohbet/$threadId'
+    | '/sohbet'
   id:
     | '__root__'
     | '/'
@@ -192,15 +227,18 @@ export interface FileRouteTypes {
     | '/auth'
     | '/horoskop'
     | '/metnu'
-    | '/qezet'
     | '/uygunluq'
     | '/_authenticated/admin'
     | '/_authenticated/jurnal'
     | '/_authenticated/profil'
     | '/_authenticated/rezervasiyalar'
     | '/_authenticated/xerite'
+    | '/api/ai'
     | '/forum/$topicId'
     | '/forum/'
+    | '/qezet/'
+    | '/_authenticated/sohbet/$threadId'
+    | '/_authenticated/sohbet/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -210,10 +248,11 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   HoroskopRoute: typeof HoroskopRoute
   MetnuRoute: typeof MetnuRoute
-  QezetRoute: typeof QezetRoute
   UygunluqRoute: typeof UygunluqRoute
+  ApiAiRoute: typeof ApiAiRoute
   ForumTopicIdRoute: typeof ForumTopicIdRoute
   ForumIndexRoute: typeof ForumIndexRoute
+  QezetIndexRoute: typeof QezetIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -260,13 +299,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MetnuRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/qezet': {
-      id: '/qezet'
-      path: '/qezet'
-      fullPath: '/qezet'
-      preLoaderRoute: typeof QezetRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/uygunluq': {
       id: '/uygunluq'
       path: '/uygunluq'
@@ -309,6 +341,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedXeriteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/ai': {
+      id: '/api/ai'
+      path: '/api/ai'
+      fullPath: '/api/ai'
+      preLoaderRoute: typeof ApiAiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forum/': {
       id: '/forum/'
       path: '/forum'
@@ -323,6 +362,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ForumTopicIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/qezet/': {
+      id: '/qezet/'
+      path: '/qezet'
+      fullPath: '/qezet/'
+      preLoaderRoute: typeof QezetIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/sohbet/': {
+      id: '/_authenticated/sohbet/'
+      path: '/sohbet'
+      fullPath: '/sohbet/'
+      preLoaderRoute: typeof AuthenticatedSohbetIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/sohbet/$threadId': {
+      id: '/_authenticated/sohbet/$threadId'
+      path: '/sohbet/$threadId'
+      fullPath: '/sohbet/$threadId'
+      preLoaderRoute: typeof AuthenticatedSohbetThreadIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -332,6 +392,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfilRoute: typeof AuthenticatedProfilRoute
   AuthenticatedRezervasiyalarRoute: typeof AuthenticatedRezervasiyalarRoute
   AuthenticatedXeriteRoute: typeof AuthenticatedXeriteRoute
+  AuthenticatedSohbetThreadIdRoute: typeof AuthenticatedSohbetThreadIdRoute
+  AuthenticatedSohbetIndexRoute: typeof AuthenticatedSohbetIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -340,6 +402,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProfilRoute: AuthenticatedProfilRoute,
   AuthenticatedRezervasiyalarRoute: AuthenticatedRezervasiyalarRoute,
   AuthenticatedXeriteRoute: AuthenticatedXeriteRoute,
+  AuthenticatedSohbetThreadIdRoute: AuthenticatedSohbetThreadIdRoute,
+  AuthenticatedSohbetIndexRoute: AuthenticatedSohbetIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -352,10 +416,11 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   HoroskopRoute: HoroskopRoute,
   MetnuRoute: MetnuRoute,
-  QezetRoute: QezetRoute,
   UygunluqRoute: UygunluqRoute,
+  ApiAiRoute: ApiAiRoute,
   ForumTopicIdRoute: ForumTopicIdRoute,
   ForumIndexRoute: ForumIndexRoute,
+  QezetIndexRoute: QezetIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
