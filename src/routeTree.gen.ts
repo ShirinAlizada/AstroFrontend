@@ -24,6 +24,7 @@ import { Route as AuthenticatedXeriteRouteImport } from './routes/_authenticated
 import { Route as ApiAiRouteImport } from './routes/api/ai'
 import { Route as ForumIndexRouteImport } from './routes/forum.index'
 import { Route as ForumTopicIdRouteImport } from './routes/forum.$topicId'
+import { Route as QezetIndexRouteImport } from './routes/qezet.index'
 import { Route as AuthenticatedSohbetIndexRouteImport } from './routes/_authenticated/sohbet.index'
 import { Route as AuthenticatedSohbetThreadIdRouteImport } from './routes/_authenticated/sohbet.$threadId'
 
@@ -102,6 +103,11 @@ const ForumTopicIdRoute = ForumTopicIdRouteImport.update({
   path: '/forum/$topicId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QezetIndexRoute = QezetIndexRouteImport.update({
+  id: '/qezet/',
+  path: '/qezet/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedSohbetIndexRoute =
   AuthenticatedSohbetIndexRouteImport.update({
     id: '/sohbet/',
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/api/ai': typeof ApiAiRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
   '/forum/': typeof ForumIndexRoute
+  '/qezet/': typeof QezetIndexRoute
   '/sohbet/$threadId': typeof AuthenticatedSohbetThreadIdRoute
   '/sohbet/': typeof AuthenticatedSohbetIndexRoute
 }
@@ -148,6 +155,7 @@ export interface FileRoutesByTo {
   '/api/ai': typeof ApiAiRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
   '/forum': typeof ForumIndexRoute
+  '/qezet': typeof QezetIndexRoute
   '/sohbet/$threadId': typeof AuthenticatedSohbetThreadIdRoute
   '/sohbet': typeof AuthenticatedSohbetIndexRoute
 }
@@ -168,6 +176,7 @@ export interface FileRoutesById {
   '/api/ai': typeof ApiAiRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
   '/forum/': typeof ForumIndexRoute
+  '/qezet/': typeof QezetIndexRoute
   '/_authenticated/sohbet/$threadId': typeof AuthenticatedSohbetThreadIdRoute
   '/_authenticated/sohbet/': typeof AuthenticatedSohbetIndexRoute
 }
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/api/ai'
     | '/forum/$topicId'
     | '/forum/'
+    | '/qezet/'
     | '/sohbet/$threadId'
     | '/sohbet/'
   fileRoutesByTo: FileRoutesByTo
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/api/ai'
     | '/forum/$topicId'
     | '/forum'
+    | '/qezet'
     | '/sohbet/$threadId'
     | '/sohbet'
   id:
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/api/ai'
     | '/forum/$topicId'
     | '/forum/'
+    | '/qezet/'
     | '/_authenticated/sohbet/$threadId'
     | '/_authenticated/sohbet/'
   fileRoutesById: FileRoutesById
@@ -240,6 +252,7 @@ export interface RootRouteChildren {
   ApiAiRoute: typeof ApiAiRoute
   ForumTopicIdRoute: typeof ForumTopicIdRoute
   ForumIndexRoute: typeof ForumIndexRoute
+  QezetIndexRoute: typeof QezetIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -349,6 +362,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ForumTopicIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/qezet/': {
+      id: '/qezet/'
+      path: '/qezet'
+      fullPath: '/qezet/'
+      preLoaderRoute: typeof QezetIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/sohbet/': {
       id: '/_authenticated/sohbet/'
       path: '/sohbet'
@@ -400,6 +420,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiRoute: ApiAiRoute,
   ForumTopicIdRoute: ForumTopicIdRoute,
   ForumIndexRoute: ForumIndexRoute,
+  QezetIndexRoute: QezetIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
