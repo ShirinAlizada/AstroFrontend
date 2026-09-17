@@ -22,6 +22,7 @@ import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedRezervasiyalarRouteImport } from './routes/_authenticated/rezervasiyalar'
 import { Route as AuthenticatedXeriteRouteImport } from './routes/_authenticated/xerite'
 import { Route as ApiAiRouteImport } from './routes/api/ai'
+import { Route as ApiPingRouteImport } from './routes/api/ping'
 import { Route as ForumIndexRouteImport } from './routes/forum.index'
 import { Route as ForumTopicIdRouteImport } from './routes/forum.$topicId'
 import { Route as QezetIndexRouteImport } from './routes/qezet.index'
@@ -94,6 +95,11 @@ const ApiAiRoute = ApiAiRouteImport.update({
   path: '/api/ai',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPingRoute = ApiPingRouteImport.update({
+  id: '/api/ping',
+  path: '/api/ping',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForumIndexRoute = ForumIndexRouteImport.update({
   id: '/forum/',
   path: '/forum/',
@@ -140,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/xerite': typeof AuthenticatedXeriteRoute
   '/api/ai': typeof ApiAiRoute
+  '/api/ping': typeof ApiPingRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
   '/qezet/$slug': typeof QezetSlugRoute
   '/forum/': typeof ForumIndexRoute
@@ -160,6 +167,7 @@ export interface FileRoutesByTo {
   '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/xerite': typeof AuthenticatedXeriteRoute
   '/api/ai': typeof ApiAiRoute
+  '/api/ping': typeof ApiPingRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
   '/qezet/$slug': typeof QezetSlugRoute
   '/forum': typeof ForumIndexRoute
@@ -182,6 +190,7 @@ export interface FileRoutesById {
   '/_authenticated/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
   '/_authenticated/xerite': typeof AuthenticatedXeriteRoute
   '/api/ai': typeof ApiAiRoute
+  '/api/ping': typeof ApiPingRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
   '/qezet/$slug': typeof QezetSlugRoute
   '/forum/': typeof ForumIndexRoute
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
     | '/rezervasiyalar'
     | '/xerite'
     | '/api/ai'
+    | '/api/ping'
     | '/forum/$topicId'
     | '/qezet/$slug'
     | '/forum/'
@@ -224,6 +234,7 @@ export interface FileRouteTypes {
     | '/rezervasiyalar'
     | '/xerite'
     | '/api/ai'
+    | '/api/ping'
     | '/forum/$topicId'
     | '/qezet/$slug'
     | '/forum'
@@ -245,6 +256,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rezervasiyalar'
     | '/_authenticated/xerite'
     | '/api/ai'
+    | '/api/ping'
     | '/forum/$topicId'
     | '/qezet/$slug'
     | '/forum/'
@@ -262,6 +274,7 @@ export interface RootRouteChildren {
   MetnuRoute: typeof MetnuRoute
   UygunluqRoute: typeof UygunluqRoute
   ApiAiRoute: typeof ApiAiRoute
+  ApiPingRoute: typeof ApiPingRoute
   ForumTopicIdRoute: typeof ForumTopicIdRoute
   QezetSlugRoute: typeof QezetSlugRoute
   ForumIndexRoute: typeof ForumIndexRoute
@@ -361,6 +374,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ping': {
+      id: '/api/ping'
+      path: '/api/ping'
+      fullPath: '/api/ping'
+      preLoaderRoute: typeof ApiPingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forum/': {
       id: '/forum/'
       path: '/forum'
@@ -438,6 +458,7 @@ const rootRouteChildren: RootRouteChildren = {
   MetnuRoute: MetnuRoute,
   UygunluqRoute: UygunluqRoute,
   ApiAiRoute: ApiAiRoute,
+  ApiPingRoute: ApiPingRoute,
   ForumTopicIdRoute: ForumTopicIdRoute,
   QezetSlugRoute: QezetSlugRoute,
   ForumIndexRoute: ForumIndexRoute,
