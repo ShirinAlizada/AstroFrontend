@@ -40,7 +40,6 @@ export async function streamAnswer(opts: {
       store: false,
       reasoning: { effort: "low" },
     }),
-    ...(opts.signal ? { signal: opts.signal } : {}),
   });
 
   if (!res.ok || !res.body) {
@@ -59,27 +58,31 @@ export async function streamAnswer(opts: {
   let buffer = "";
 
   const stream = new ReadableStream<Uint8Array>({
-    async pull(controller) {
-      const { done, value } = await reader.read();
-      if (done) {
-        controller.close();
-        return;
-      }
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
-      for (const line of lines) {
-        if (!line.startsWith("data:")) continue;
-        const payload = line.slice(5).trim();
-        if (!payload || payload === "[DONE]") continue;
-        try {
-          const evt = JSON.parse(payload) as { type?: string; delta?: string };
-          if (evt.type === "response.output_text.delta" && typeof evt.delta === "string") {
-            controller.enqueue(encoder.encode(evt.delta));
+    async start(controller) {
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.startsWith("data:")) continue;
+            const payload = line.slice(5).trim();
+            if (!payload || payload === "[DONE]") continue;
+            try {
+              const evt = JSON.parse(payload) as { type?: string; delta?: string };
+              if (evt.type === "response.output_text.delta" && typeof evt.delta === "string") {
+                controller.enqueue(encoder.encode(evt.delta));
+              }
+            } catch {
+              // ignore malformed keep-alive chunks
+            }
           }
-        } catch {
-          // ignore malformed keep-alive chunks
         }
+        controller.close();
+      } catch (error) {
+        controller.error(error);
       }
     },
     cancel() {

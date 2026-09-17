@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Page, PageHeader } from "@/components/Page";
 import { useAuth, useIsAdmin } from "@/hooks/useAuth";
+import { streamAi } from "@/lib/ai-client";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -19,16 +20,18 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const TABS = [
+  { key: "overview", label: "İcmal" },
   { key: "users", label: "İstifadəçilər" },
   { key: "astrologers", label: "Astroloqlar" },
   { key: "bookings", label: "Rezervasiyalar" },
-  { key: "content", label: "Məzmun" },
+  { key: "articles", label: "Qəzet" },
+  { key: "content", label: "Horoskop" },
 ] as const;
 
 function AdminPage() {
   const { user, loading } = useAuth();
   const isAdmin = useIsAdmin(user?.id);
-  const [tab, setTab] = useState<string>("users");
+  const [tab, setTab] = useState<string>("overview");
 
   if (loading) return <Page><p className="text-mist py-10">Yüklənir…</p></Page>;
 
@@ -53,6 +56,8 @@ function AdminPage() {
           </button>
         ))}
       </div>
+      {tab === "overview" && <OverviewTab />}
+      {tab === "articles" && <ArticlesTab />}
       {tab === "users" && <UsersTab />}
       {tab === "astrologers" && <AstrologersTab />}
       {tab === "bookings" && <BookingsTab />}
@@ -269,6 +274,233 @@ function ContentTab() {
           <p className="text-xs text-mist mt-1">Dəyişiklik sahədən çıxanda yadda saxlanır.</p>
         </Card>
       ))}
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-2xl border border-white/5 bg-celestial-card/60 p-5">
+      <div className="font-display text-4xl text-goldsoft">{value}</div>
+      <div className="mt-1 text-xs tracking-widest uppercase text-mist">{label}</div>
+    </div>
+  );
+}
+
+function OverviewTab() {
+  const { data } = useQuery({
+    queryKey: ["admin-stats"],
+    queryFn: async () => {
+      const counts = await Promise.all([
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("astrologers").select("*", { count: "exact", head: true }),
+        supabase.from("bookings").select("*", { count: "exact", head: true }),
+        supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("articles").select("*", { count: "exact", head: true }),
+        supabase.from("articles").select("*", { count: "exact", head: true }).eq("published", true),
+        supabase.from("forum_topics").select("*", { count: "exact", head: true }),
+        supabase.from("journal_entries").select("*", { count: "exact", head: true }),
+      ]);
+      return counts.map((c) => c.count ?? 0);
+    },
+  });
+  const v = (i: number) => data?.[i] ?? 0;
+  return (
+    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Stat label="İstifadəçi" value={v(0)} />
+      <Stat label="Astroloq" value={v(1)} />
+      <Stat label="Rezervasiya" value={v(2)} />
+      <Stat label="Gözləyən rezervasiya" value={v(3)} />
+      <Stat label="Məqalə" value={v(4)} />
+      <Stat label="Dərc olunmuş" value={v(5)} />
+      <Stat label="Forum mövzusu" value={v(6)} />
+      <Stat label="Jurnal qeydi" value={v(7)} />
+    </div>
+  );
+}
+
+function slugify(text: string) {
+  const map: Record<string, string> = { ə: "e", ı: "i", ö: "o", ü: "u", ç: "c", ş: "s", ğ: "g", İ: "i" };
+  return text
+    .toLowerCase()
+    .replace(/[əıöüçşğİ]/g, (c) => map[c] ?? c)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+type ArticleForm = { id?: string; title: string; excerpt: string; body: string; tag: string; published: boolean };
+
+const EMPTY_ARTICLE: ArticleForm = { title: "", excerpt: "", body: "", tag: "Ümumi", published: false };
+
+function ArticlesTab() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [form, setForm] = useState<ArticleForm>(EMPTY_ARTICLE);
+  const [topic, setTopic] = useState("");
+  const [generating, setGenerating] = useState(false);
+
+  const { data } = useQuery({
+    queryKey: ["admin-articles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("id, title, slug, excerpt, body, tag, published, published_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const save = useMutation({
+    mutationFn: async () => {
+      if (form.title.trim().length < 5) throw new Error("Başlıq çox qısadır");
+      if (form.body.trim().length < 50) throw new Error("Mətn çox qısadır");
+      const payload = {
+        title: form.title.trim(),
+        excerpt: form.excerpt.trim() || null,
+        body: form.body.trim(),
+        tag: form.tag.trim() || "Ümumi",
+        published: form.published,
+        published_at: form.published ? new Date().toISOString() : null,
+      };
+      if (form.id) {
+        const { error } = await supabase.from("articles").update(payload).eq("id", form.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("articles")
+          .insert({ ...payload, slug: `${slugify(form.title)}-${Date.now().toString(36).slice(-4)}`, author_id: user?.id ?? null });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Yadda saxlanıldı");
+      setForm(EMPTY_ARTICLE);
+      queryClient.invalidateQueries({ queryKey: ["admin-articles"] });
+      queryClient.invalidateQueries({ queryKey: ["articles"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const togglePublish = useMutation({
+    mutationFn: async ({ id, published }: { id: string; published: boolean }) => {
+      const { error } = await supabase
+        .from("articles")
+        .update({ published, published_at: published ? new Date().toISOString() : null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-articles"] });
+      queryClient.invalidateQueries({ queryKey: ["articles"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("articles").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Silindi");
+      queryClient.invalidateQueries({ queryKey: ["admin-articles"] });
+      queryClient.invalidateQueries({ queryKey: ["articles"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  async function generateDraft() {
+    if (topic.trim().length < 3) {
+      toast.error("Mövzu yazın");
+      return;
+    }
+    setGenerating(true);
+    setForm((f) => ({ ...f, body: "" }));
+    try {
+      let acc = "";
+      await streamAi("article", [{ role: "user", content: `Mövzu: ${topic.trim()}` }], (d) => {
+        acc += d;
+        setForm((f) => ({ ...f, body: acc }));
+      });
+      const title = /BAŞLIQ:\s*(.+)/.exec(acc)?.[1]?.trim() ?? "";
+      const excerpt = /XÜLASƏ:\s*(.+)/.exec(acc)?.[1]?.trim() ?? "";
+      const bodyPart = acc.split(/MƏTN:\s*/)[1]?.trim() ?? acc.trim();
+      setForm((f) => ({ ...f, title: title || f.title, excerpt: excerpt || f.excerpt, body: bodyPart }));
+      toast.success("Qaralama hazırdır — oxuyub redaktə edin");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  const field = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm placeholder:text-mist/70 focus:outline-none focus:border-gold/50";
+
+  return (
+    <div className="grid lg:grid-cols-12 gap-6">
+      <div className="lg:col-span-6 space-y-3">
+        {data?.map((a) => (
+          <Card key={a.id}>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="font-display text-xl truncate">{a.title}</div>
+                <div className="text-xs text-mist mt-1">
+                  {a.tag} · {a.published ? "dərc olunub" : "qaralama"}
+                </div>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <button type="button" onClick={() => setForm({ id: a.id, title: a.title, excerpt: a.excerpt ?? "", body: a.body, tag: a.tag, published: a.published })}
+                  className="text-xs px-3 py-1.5 rounded-full border border-white/15 text-mist hover:border-gold/40">
+                  Redaktə
+                </button>
+                <button type="button" onClick={() => togglePublish.mutate({ id: a.id, published: !a.published })}
+                  className={`text-xs px-3 py-1.5 rounded-full border ${a.published ? "border-gold text-goldsoft" : "border-white/15 text-mist"}`}>
+                  {a.published ? "Gizlət" : "Dərc et"}
+                </button>
+                <button type="button" onClick={() => remove.mutate(a.id)}
+                  className="text-xs px-3 py-1.5 rounded-full border border-white/15 text-mist hover:border-red-400/50 hover:text-red-400">
+                  Sil
+                </button>
+              </div>
+            </div>
+          </Card>
+        ))}
+        {data?.length === 0 && <p className="text-mist">Məqalə yoxdur.</p>}
+      </div>
+
+      <div className="lg:col-span-6 h-fit rounded-2xl bg-celestial-card/60 border border-white/5 p-6 space-y-3">
+        <h2 className="font-display text-2xl">{form.id ? "Məqaləni redaktə et" : "Yeni məqalə"}</h2>
+
+        <div className="rounded-xl border border-gold/25 bg-gold/5 p-4 space-y-2">
+          <p className="text-xs tracking-widest uppercase text-gold">AI köməkçi</p>
+          <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Mövzu: məsələn, Venera retroqrad" className={field} />
+          <button type="button" onClick={generateDraft} disabled={generating}
+            className="w-full px-5 py-2.5 rounded-full border border-gold/50 text-goldsoft text-sm hover:bg-gold/10 transition disabled:opacity-50">
+            {generating ? "Yazılır…" : "AI ilə qaralama yaz"}
+          </button>
+        </div>
+
+        <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Başlıq" maxLength={160} className={field} />
+        <input value={form.tag} onChange={(e) => setForm({ ...form, tag: e.target.value })} placeholder="Etiket" maxLength={40} className={field} />
+        <textarea value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} placeholder="Qısa anons" rows={2} maxLength={300} className={`${field} resize-none`} />
+        <textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Məqalə mətni" rows={12} className={`${field} resize-y`} />
+        <label className="flex items-center gap-2 text-sm text-mist">
+          <input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} className="accent-[color:var(--color-gold,#d9b45b)]" />
+          Dərhal dərc et
+        </label>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => save.mutate()} className="flex-1 px-5 py-2.5 rounded-full bg-gold text-ink font-semibold text-sm hover:bg-goldsoft transition">
+            Yadda saxla
+          </button>
+          {form.id && (
+            <button type="button" onClick={() => setForm(EMPTY_ARTICLE)} className="px-5 py-2.5 rounded-full border border-white/15 text-mist text-sm">
+              Ləğv et
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
