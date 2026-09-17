@@ -10,7 +10,6 @@ export const Route = createFileRoute("/api/ai")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        console.log("[ai] handler hit");
         let body: Body;
         try {
           body = (await request.json()) as Body;
