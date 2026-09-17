@@ -26,6 +26,7 @@ export async function streamAnswer(opts: {
     ),
   ];
 
+  console.log("[ai] calling gateway");
   const res = await fetch(GATEWAY_URL, {
     method: "POST",
     headers: {
@@ -40,9 +41,9 @@ export async function streamAnswer(opts: {
       store: false,
       reasoning: { effort: "low" },
     }),
-    ...(opts.signal ? { signal: opts.signal } : {}),
   });
 
+  console.log("[ai] gateway status", res.status, "hasBody", Boolean(res.body));
   if (!res.ok || !res.body) {
     const text = await res.text().catch(() => "");
     let message = "AI cavab vermədi.";
