@@ -53,6 +53,9 @@ export function SiteNav() {
           ))}
           {user && (
             <>
+              <Link to="/sohbet" className="hover:text-goldsoft transition" activeProps={{ className: "text-white" }}>
+                AI Söhbət
+              </Link>
               <Link to="/jurnal" className="hover:text-goldsoft transition" activeProps={{ className: "text-white" }}>
                 Jurnal
               </Link>
@@ -105,6 +108,9 @@ export function SiteNav() {
           ))}
           {user && (
             <>
+              <Link to="/sohbet" onClick={() => setOpen(false)} className="hover:text-goldsoft">
+                AI Söhbət
+              </Link>
               <Link to="/jurnal" onClick={() => setOpen(false)} className="hover:text-goldsoft">
                 Jurnal
               </Link>
