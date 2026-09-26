@@ -1,15 +1,28 @@
 import type { ReactNode } from "react";
 import { SiteNav } from "./SiteNav";
+import { Sidebar } from "./Sidebar";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useAuth, useIsAdmin } from "@/hooks/useAuth";
 
 export function Page({ children }: { children: ReactNode }) {
+  const { t } = useLanguage();
+  const { user } = useAuth();
+  const isAdmin = useIsAdmin(user?.id);
   return (
     <div className="min-h-screen bg-ink text-white font-sans antialiased">
       <SiteNav />
-      <main className="mx-auto max-w-6xl px-6 pb-20">{children}</main>
+      <div className="mx-auto max-w-7xl px-6 flex gap-8 items-start">
+        <Sidebar
+          isAdmin={isAdmin}
+          hasUser={Boolean(user)}
+          className="hidden lg:flex sticky top-20 shrink-0 w-52 py-1"
+        />
+        <main className="min-w-0 flex-1 pb-20">{children}</main>
+      </div>
       <footer className="border-t border-white/5 mt-10">
-        <div className="mx-auto max-w-6xl px-6 py-8 text-xs text-mist flex flex-col sm:flex-row gap-2 justify-between">
-          <span>© {new Date().getFullYear()} Ruh Astrolojiya</span>
-          <span>Səmavi məsləhət · Bakı</span>
+        <div className="mx-auto max-w-7xl px-6 py-8 text-xs text-mist flex flex-col sm:flex-row gap-2 justify-between">
+          <span>© {new Date().getFullYear()} Virgo Astrology</span>
+          <span>{t("footer.tagline")}</span>
         </div>
       </footer>
     </div>

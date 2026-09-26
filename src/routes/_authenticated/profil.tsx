@@ -5,31 +5,33 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Page, PageHeader } from "@/components/Page";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { CITIES, computeNatalChart, SIGN_SYMBOLS } from "@/lib/astrology";
 
 export const Route = createFileRoute("/_authenticated/profil")({
   head: () => ({
     meta: [
-      { title: "Profilim — Ruh Astrolojiya" },
+      { title: "Profilim — Virgo Astrology" },
       { name: "description", content: "Doğum tarixi, dəqiq doğum saatı və doğum yerini daxil edərək natal xəritəni yenilə." },
-      { property: "og:title", content: "Profilim — Ruh Astrolojiya" },
+      { property: "og:title", content: "Profilim — Virgo Astrology" },
       { property: "og:description", content: "Doğum məlumatlarını idarə et və natal xəritəni yenilə." },
     ],
   }),
   component: ProfilePage,
 });
 
-const schema = z.object({
-  full_name: z.string().trim().min(2, "Adınızı yazın").max(80),
-  birth_date: z.string().min(1, "Doğum tarixini seçin"),
-  birth_time: z.string().min(1, "Doğum saatını yazın"),
-  birth_place: z.string().min(1, "Doğum yerini seçin"),
-});
-
 function ProfilePage() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
+
+  const schema = z.object({
+    full_name: z.string().trim().min(2, t("profil.err_name")).max(80),
+    birth_date: z.string().min(1, t("profil.err_date")),
+    birth_time: z.string().min(1, t("profil.err_time")),
+    birth_place: z.string().min(1, t("profil.err_place")),
+  });
   const [form, setForm] = useState({
     full_name: "",
     birth_date: "",
@@ -68,12 +70,12 @@ function ProfilePage() {
     e.preventDefault();
     const parsed = schema.safeParse(form);
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Məlumatları yoxlayın");
+      toast.error(parsed.error.issues[0]?.message ?? t("common.check_fields"));
       return;
     }
     const city = CITIES.find((c) => c.name === form.birth_place);
     if (!city) {
-      toast.error("Doğum yerini siyahıdan seçin");
+      toast.error(t("profil.select_city_error"));
       return;
     }
     setSaving(true);
@@ -108,10 +110,10 @@ function ProfilePage() {
       if (cErr) throw cErr;
 
       await queryClient.invalidateQueries();
-      toast.success("Xəritən hesablandı");
+      toast.success(t("profil.chart_calculated"));
       navigate({ to: "/xerite" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Yadda saxlanmadı");
+      toast.error(err instanceof Error ? err.message : t("common.save_failed"));
     } finally {
       setSaving(false);
     }
@@ -120,34 +122,34 @@ function ProfilePage() {
   return (
     <Page>
       <PageHeader
-        kicker="Profil"
-        title="Doğum məlumatların"
-        subtitle="Dəqiq doğum saatı yüksələn bürcü və evləri düzgün hesablamaq üçün vacibdir."
+        kicker={t("page.profil.kicker")}
+        title={t("page.profil.title")}
+        subtitle={t("page.profil.subtitle")}
       />
 
       <div className="grid lg:grid-cols-3 gap-6">
         <form onSubmit={save} className="lg:col-span-2 rounded-2xl bg-celestial-card/60 border border-white/5 p-6 space-y-4">
           <div>
-            <label htmlFor="full_name" className="block text-xs text-mist mb-1.5">Ad Soyad</label>
+            <label htmlFor="full_name" className="block text-xs text-mist mb-1.5">{t("profil.ad_soyad")}</label>
             <input id="full_name" value={form.full_name} maxLength={80}
               onChange={(e) => setForm({ ...form, full_name: e.target.value })}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-gold/50" />
           </div>
           <div className="grid sm:grid-cols-3 gap-4">
             <div>
-              <label htmlFor="birth_date" className="block text-xs text-mist mb-1.5">Doğum tarixi</label>
+              <label htmlFor="birth_date" className="block text-xs text-mist mb-1.5">{t("common.dogum_tarixi")}</label>
               <input id="birth_date" type="date" value={form.birth_date}
                 onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-gold/50" />
             </div>
             <div>
-              <label htmlFor="birth_time" className="block text-xs text-mist mb-1.5">Doğum saatı</label>
-              <input id="birth_time" type="time" value={form.birth_time}
+              <label htmlFor="birth_time" className="block text-xs text-mist mb-1.5">{t("profil.dogum_saati")}</label>
+              <input id="birth_time" type="time" lang="az-AZ" value={form.birth_time}
                 onChange={(e) => setForm({ ...form, birth_time: e.target.value })}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-gold/50" />
             </div>
             <div>
-              <label htmlFor="birth_place" className="block text-xs text-mist mb-1.5">Doğum yeri</label>
+              <label htmlFor="birth_place" className="block text-xs text-mist mb-1.5">{t("common.dogum_yeri")}</label>
               <select id="birth_place" value={form.birth_place}
                 onChange={(e) => setForm({ ...form, birth_place: e.target.value })}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-gold/50">
@@ -158,30 +160,30 @@ function ProfilePage() {
             </div>
           </div>
           <div>
-            <label htmlFor="bio" className="block text-xs text-mist mb-1.5">Haqqımda</label>
+            <label htmlFor="bio" className="block text-xs text-mist mb-1.5">{t("profil.haqqimda")}</label>
             <textarea id="bio" rows={3} value={form.bio} maxLength={500}
               onChange={(e) => setForm({ ...form, bio: e.target.value })}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:border-gold/50" />
           </div>
           <button type="submit" disabled={saving || isLoading}
             className="px-6 py-3 rounded-full bg-gold text-ink font-semibold text-sm hover:bg-goldsoft transition disabled:opacity-60">
-            {saving ? "Hesablanır…" : "Yadda saxla və xəritəni hesabla"}
+            {saving ? t("profil.saving") : t("profil.save_button")}
           </button>
         </form>
 
         <aside className="rounded-2xl bg-celestial-card/60 border border-white/5 p-6">
-          <p className="text-gold text-xs tracking-[0.3em] uppercase mb-4">Səmavi imzan</p>
+          <p className="text-gold text-xs tracking-[0.3em] uppercase mb-4">{t("profil.celestial_signature")}</p>
           <div className="space-y-3 text-sm">
-            <Row label="Günəş" value={profile?.sun_sign} />
-            <Row label="Ay" value={profile?.moon_sign} />
-            <Row label="Yüksələn" value={profile?.ascendant} />
+            <Row label={t("common.gunes")} value={profile?.sun_sign} />
+            <Row label={t("common.ay")} value={profile?.moon_sign} />
+            <Row label={t("common.yukselen")} value={profile?.ascendant} />
           </div>
           <div className="mt-6 grid gap-2">
             <Link to="/xerite" className="text-center text-sm px-4 py-2.5 rounded-full border border-gold/40 text-goldsoft hover:bg-gold/10 transition">
-              Natal xəritəm
+              {t("profil.my_chart_link")}
             </Link>
             <Link to="/rezervasiyalar" className="text-center text-sm px-4 py-2.5 rounded-full border border-white/10 text-mist hover:text-white transition">
-              Rezervasiyalarım
+              {t("profil.my_bookings_link")}
             </Link>
           </div>
         </aside>

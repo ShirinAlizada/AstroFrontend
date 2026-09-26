@@ -4,15 +4,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Page, PageHeader } from "@/components/Page";
-import { useAuth, useIsAdmin } from "@/hooks/useAuth";
+import { useAuth, useIsAdmin, useIsSuperAdmin } from "@/hooks/useAuth";
 import { streamAi } from "@/lib/ai-client";
+import {
+  adminListUsers,
+  adminSetRole,
+  adminCreateUser,
+  adminDeleteUser,
+  type AssignableRole,
+} from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Admin panel — Ruh Astrolojiya" },
+      { title: "Admin panel — Virgo Astrology" },
       { name: "description", content: "İstifadəçiləri, təsdiqlənmiş astroloqları, rezervasiyaları və horoskop mətnlərini idarə et." },
-      { property: "og:title", content: "Admin panel — Ruh Astrolojiya" },
+      { property: "og:title", content: "Admin panel — Virgo Astrology" },
       { property: "og:description", content: "Platformanın idarəetmə paneli." },
     ],
   }),
@@ -21,10 +28,10 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 const TABS = [
   { key: "overview", label: "İcmal" },
-  { key: "users", label: "İstifadəçilər" },
+  { key: "users", label: "İstifadəçilər və rollar" },
   { key: "astrologers", label: "Astroloqlar" },
   { key: "bookings", label: "Rezervasiyalar" },
-  { key: "articles", label: "Qəzet" },
+  { key: "articles", label: "Məqalə" },
   { key: "content", label: "Horoskop" },
 ] as const;
 
@@ -70,32 +77,182 @@ function Card({ children }: { children: React.ReactNode }) {
   return <div className="rounded-2xl bg-celestial-card/60 border border-white/5 p-5">{children}</div>;
 }
 
+const ROLE_LABEL: Record<string, string> = {
+  super_admin: "Super admin",
+  admin: "Admin",
+  astrologer: "Astroloq",
+  user: "İstifadəçi",
+};
+const ASSIGNABLE_ROLES: AssignableRole[] = ["super_admin", "admin", "astrologer"];
+const EMPTY_NEW_USER = { email: "", password: "", full_name: "", role: "user" as AssignableRole };
+
 function UsersTab() {
-  const { data } = useQuery({
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isSuperAdmin = useIsSuperAdmin(user?.id);
+  const [form, setForm] = useState(EMPTY_NEW_USER);
+
+  const { data, error, isLoading } = useQuery({
     queryKey: ["admin-users"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, sun_sign, birth_place, created_at")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => adminListUsers(),
   });
+
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+  const onError = (e: Error) => toast.error(e.message);
+
+  const setRole = useMutation({
+    mutationFn: (vars: { userId: string; role: AssignableRole; grant: boolean }) =>
+      adminSetRole({ data: vars }),
+    onSuccess: refresh,
+    onError,
+  });
+
+  const removeUser = useMutation({
+    mutationFn: (userId: string) => adminDeleteUser({ data: { userId } }),
+    onSuccess: () => {
+      toast.success("İstifadəçi silindi");
+      refresh();
+    },
+    onError,
+  });
+
+  const createUser = useMutation({
+    mutationFn: () =>
+      adminCreateUser({
+        data: {
+          email: form.email,
+          password: form.password,
+          role: form.role,
+          ...(form.full_name.trim() ? { full_name: form.full_name.trim() } : {}),
+        },
+      }),
+    onSuccess: () => {
+      toast.success("İstifadəçi yaradıldı");
+      setForm(EMPTY_NEW_USER);
+      refresh();
+    },
+    onError,
+  });
+
+  const field =
+    "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm placeholder:text-mist/70 focus:outline-none focus:border-gold/50";
+
   return (
-    <div className="grid md:grid-cols-2 gap-4">
-      {data?.map((p) => (
-        <Card key={p.id}>
-          <div className="flex justify-between">
-            <span className="font-display text-xl">{p.full_name ?? "Adsız istifadəçi"}</span>
-            <span className="text-xs text-mist">{new Date(p.created_at).toLocaleDateString("az-AZ")}</span>
-          </div>
-          <p className="text-sm text-mist mt-1">
-            {p.sun_sign ?? "Bürc yoxdur"} · {p.birth_place ?? "Yer qeyd edilməyib"}
-          </p>
-        </Card>
-      ))}
-      {data?.length === 0 && <p className="text-mist">İstifadəçi yoxdur.</p>}
+    <div className="grid lg:grid-cols-12 gap-6">
+      <div className="lg:col-span-7 space-y-3">
+        {isLoading && <p className="text-mist">Yüklənir…</p>}
+        {error && <p className="text-red-300 text-sm">{(error as Error).message}</p>}
+        {data?.map((u) => (
+          <Card key={u.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-display text-xl truncate">{u.full_name ?? "Adsız istifadəçi"}</div>
+                <div className="text-xs text-mist truncate">{u.email}</div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {u.roles.length === 0 && (
+                    <span className="text-xs px-2.5 py-1 rounded-full border border-white/15 text-mist">
+                      Rol yoxdur
+                    </span>
+                  )}
+                  {u.roles.map((r) => (
+                    <span key={r} className="text-xs px-2.5 py-1 rounded-full border border-gold/40 text-goldsoft">
+                      {ROLE_LABEL[r] ?? r}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              {isSuperAdmin && u.id !== user?.id && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm(`${u.email} silinsin? Bu geri qaytarılmır.`)) removeUser.mutate(u.id);
+                  }}
+                  className="text-xs px-3 py-1.5 rounded-full border border-white/15 text-mist hover:border-red-400/50 hover:text-red-400 shrink-0"
+                >
+                  Sil
+                </button>
+              )}
+            </div>
+            {isSuperAdmin && (
+              <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/5">
+                {ASSIGNABLE_ROLES.map((r) => {
+                  const has = u.roles.includes(r);
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRole.mutate({ userId: u.id, role: r, grant: !has })}
+                      className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                        has ? "border-gold bg-gold/15 text-goldsoft" : "border-white/15 text-mist hover:border-gold/40"
+                      }`}
+                    >
+                      {has ? "✓ " : "+ "}
+                      {ROLE_LABEL[r]}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        ))}
+        {data?.length === 0 && <p className="text-mist">İstifadəçi yoxdur.</p>}
+      </div>
+
+      {isSuperAdmin ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            createUser.mutate();
+          }}
+          className="lg:col-span-5 h-fit rounded-2xl bg-celestial-card/60 border border-white/5 p-6 space-y-3"
+        >
+          <h2 className="font-display text-2xl">Yeni istifadəçi</h2>
+          <input
+            className={field}
+            placeholder="Ad Soyad"
+            value={form.full_name}
+            maxLength={80}
+            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+          />
+          <input
+            className={field}
+            type="email"
+            placeholder="E-poçt"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+          <input
+            className={field}
+            type="password"
+            placeholder="Şifrə (min 6 simvol)"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
+          <select
+            className={field}
+            value={form.role}
+            onChange={(e) => setForm({ ...form, role: e.target.value as AssignableRole })}
+          >
+            <option value="user" className="bg-ink">İstifadəçi</option>
+            {ASSIGNABLE_ROLES.map((r) => (
+              <option key={r} value={r} className="bg-ink">
+                {ROLE_LABEL[r]}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            disabled={createUser.isPending}
+            className="w-full px-5 py-2.5 rounded-full bg-gold text-ink font-semibold text-sm hover:bg-goldsoft transition disabled:opacity-60"
+          >
+            {createUser.isPending ? "Yaradılır…" : "Əlavə et"}
+          </button>
+        </form>
+      ) : (
+        <p className="lg:col-span-5 text-sm text-mist">
+          Yeni istifadəçi əlavə etmək, silmək və rol vermək yalnız super admin üçündür.
+        </p>
+      )}
     </div>
   );
 }
@@ -216,7 +373,7 @@ function BookingsTab() {
             <div>
               <div className="font-display text-lg">{b.astrologers?.display_name}</div>
               <div className="text-xs text-mist">
-                {new Date(b.scheduled_at).toLocaleString("az-AZ")} · {b.session_type === "live" ? "Canlı" : "Yazılı"}
+                {new Date(b.scheduled_at).toLocaleString("az-AZ", { hour12: false })} · {b.session_type === "live" ? "Canlı" : "Yazılı"}
               </div>
             </div>
             <select value={b.status} onChange={(e) => setStatus.mutate({ id: b.id, status: e.target.value })}

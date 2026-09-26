@@ -7,9 +7,9 @@ import { useAuth } from "@/hooks/useAuth";
 export const Route = createFileRoute("/_authenticated/sohbet/")({
   head: () => ({
     meta: [
-      { title: "AI Astroloq — Ruh Astrolojiya" },
-      { name: "description", content: "Ruh Astrolojiya AI astroloq köməkçisi ilə söhbətə başla." },
-      { property: "og:title", content: "AI Astroloq — Ruh Astrolojiya" },
+      { title: "AI Astroloq — Virgo Astrology" },
+      { name: "description", content: "Virgo Astrology AI astroloq köməkçisi ilə söhbətə başla." },
+      { property: "og:title", content: "AI Astroloq — Virgo Astrology" },
       { property: "og:description", content: "Astroloji suallarına dərhal cavab al." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -22,20 +22,29 @@ export function useAuth() {
   return { session, user, loading };
 }
 
-export function useIsAdmin(userId: string | undefined) {
-  const [isAdmin, setIsAdmin] = useState(false);
+export function useRoles(userId: string | undefined) {
+  const [roles, setRoles] = useState<string[]>([]);
   useEffect(() => {
     if (!userId) {
-      setIsAdmin(false);
+      setRoles([]);
       return;
     }
     supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle()
-      .then(({ data }) => setIsAdmin(Boolean(data)));
+      .then(({ data }) => setRoles((data ?? []).map((r) => r.role)));
   }, [userId]);
-  return isAdmin;
+  return roles;
+}
+
+/** True for "admin" and "super_admin" — super_admin can do everything an admin can. */
+export function useIsAdmin(userId: string | undefined) {
+  const roles = useRoles(userId);
+  return roles.includes("admin") || roles.includes("super_admin");
+}
+
+/** True only for "super_admin" — manages user accounts and roles. */
+export function useIsSuperAdmin(userId: string | undefined) {
+  return useRoles(userId).includes("super_admin");
 }

@@ -5,14 +5,15 @@ import { toast } from "sonner";
 import { Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Page, PageHeader } from "@/components/Page";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/astroloq")({
   head: () => ({
     meta: [
-      { title: "Astroloqlar və rezervasiya — Ruh Astrolojiya" },
+      { title: "Astroloqlar və rezervasiya — Virgo Astrology" },
       { name: "description", content: "Təsdiqlənmiş astroloqlarla canlı və ya yazılı konsultasiya seansı rezerv et." },
-      { property: "og:title", content: "Astroloqlar və rezervasiya — Ruh Astrolojiya" },
+      { property: "og:title", content: "Astroloqlar və rezervasiya — Virgo Astrology" },
       { property: "og:description", content: "Peşəkar astroloqlarla seans rezervasiyası." },
       { property: "og:type", content: "website" },
     ],
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/astroloq")({
 });
 
 function AstrologersPage() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const [selected, setSelected] = useState<string | null>(null);
   const [form, setForm] = useState({ session_type: "live", scheduled_at: "", note: "" });
@@ -40,10 +42,10 @@ function AstrologersPage() {
 
   const book = useMutation({
     mutationFn: async () => {
-      if (!selected) throw new Error("Astroloq seçin");
-      if (!form.scheduled_at) throw new Error("Tarix və saat seçin");
-      if (new Date(form.scheduled_at).getTime() < Date.now()) throw new Error("Gələcək bir vaxt seçin");
-      if (form.note.length > 500) throw new Error("Qeyd çox uzundur");
+      if (!selected) throw new Error(t("astroloq.err_select_astrologer"));
+      if (!form.scheduled_at) throw new Error(t("astroloq.err_select_datetime"));
+      if (new Date(form.scheduled_at).getTime() < Date.now()) throw new Error(t("astroloq.err_future_datetime"));
+      if (form.note.length > 500) throw new Error(t("astroloq.err_note_too_long"));
       const { data: auth } = await supabase.auth.getUser();
       const { error } = await supabase.from("bookings").insert({
         user_id: auth.user!.id,
@@ -55,7 +57,7 @@ function AstrologersPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Rezervasiya göndərildi");
+      toast.success(t("astroloq.booking_sent"));
       setSelected(null);
       setForm({ session_type: "live", scheduled_at: "", note: "" });
     },
@@ -65,12 +67,12 @@ function AstrologersPage() {
   return (
     <Page>
       <PageHeader
-        kicker="Astroloqlar"
-        title="Peşəkar məsləhət al"
-        subtitle="Təsdiqlənmiş astroloqlarla canlı seans və ya yazılı təhlil üçün vaxt seç."
+        kicker={t("page.astroloq.kicker")}
+        title={t("page.astroloq.title")}
+        subtitle={t("page.astroloq.subtitle")}
       />
 
-      {isLoading && <p className="text-mist">Yüklənir…</p>}
+      {isLoading && <p className="text-mist">{t("common.yuklenir")}</p>}
 
       <div className="grid md:grid-cols-3 gap-5">
         {astrologers?.map((a) => (
@@ -90,11 +92,11 @@ function AstrologersPage() {
               <span className="flex items-center gap-1 text-sm text-goldsoft">
                 <Star className="size-4 fill-current" /> {a.rating}
               </span>
-              <span className="text-sm text-white">{a.price_azn} ₼ / seans</span>
+              <span className="text-sm text-white">{a.price_azn} ₼ {t("astroloq.seans_suffix")}</span>
             </div>
             <button type="button" onClick={() => setSelected(selected === a.id ? null : a.id)}
               className="mt-4 w-full px-5 py-2.5 rounded-full bg-gold text-ink font-semibold text-sm hover:bg-goldsoft transition">
-              {selected === a.id ? "Bağla" : "Vaxt seç"}
+              {selected === a.id ? t("nav.baglat") : t("astroloq.pick_time")}
             </button>
 
             {selected === a.id && (
@@ -102,34 +104,34 @@ function AstrologersPage() {
                 {user ? (
                   <form onSubmit={(e) => { e.preventDefault(); book.mutate(); }} className="space-y-3">
                     <div>
-                      <label htmlFor={`type-${a.id}`} className="block text-xs text-mist mb-1.5">Seans növü</label>
+                      <label htmlFor={`type-${a.id}`} className="block text-xs text-mist mb-1.5">{t("astroloq.session_type")}</label>
                       <select id={`type-${a.id}`} value={form.session_type}
                         onChange={(e) => setForm({ ...form, session_type: e.target.value })}
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gold/50">
-                        <option value="live" className="bg-ink">Canlı seans</option>
-                        <option value="written" className="bg-ink">Yazılı təhlil</option>
+                        <option value="live" className="bg-ink">{t("astroloq.opt_live")}</option>
+                        <option value="written" className="bg-ink">{t("astroloq.opt_written")}</option>
                       </select>
                     </div>
                     <div>
-                      <label htmlFor={`when-${a.id}`} className="block text-xs text-mist mb-1.5">Tarix və saat</label>
-                      <input id={`when-${a.id}`} type="datetime-local" value={form.scheduled_at}
+                      <label htmlFor={`when-${a.id}`} className="block text-xs text-mist mb-1.5">{t("astroloq.datetime")}</label>
+                      <input id={`when-${a.id}`} type="datetime-local" lang="az" value={form.scheduled_at}
                         onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gold/50" />
                     </div>
                     <div>
-                      <label htmlFor={`note-${a.id}`} className="block text-xs text-mist mb-1.5">Qeyd</label>
+                      <label htmlFor={`note-${a.id}`} className="block text-xs text-mist mb-1.5">{t("astroloq.note_label")}</label>
                       <textarea id={`note-${a.id}`} rows={2} value={form.note} maxLength={500}
                         onChange={(e) => setForm({ ...form, note: e.target.value })}
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:border-gold/50" />
                     </div>
                     <button type="submit" disabled={book.isPending}
                       className="w-full px-5 py-2.5 rounded-full border border-gold/50 text-goldsoft text-sm hover:bg-gold/10 transition disabled:opacity-60">
-                      Rezerv et
+                      {t("astroloq.book_button")}
                     </button>
                   </form>
                 ) : (
                   <p className="text-sm text-mist">
-                    Rezervasiya üçün <Link to="/auth" className="text-goldsoft hover:text-gold">daxil ol</Link>.
+                    {t("astroloq.login_prefix")} <Link to="/auth" className="text-goldsoft hover:text-gold">{t("common.daxil_ol").toLowerCase()}</Link>.
                   </p>
                 )}
               </div>

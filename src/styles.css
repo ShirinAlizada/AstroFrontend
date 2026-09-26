@@ -116,3 +116,43 @@
     font-family: var(--font-sans);
   }
 }
+
+/* --- Zərif, sayt-boyu ulduz/planet fonu (StarField.tsx) --- */
+@theme inline {
+  --animate-star-twinkle-a: star-twinkle-a 6s ease-in-out infinite;
+  --animate-star-twinkle-b: star-twinkle-b 8s ease-in-out infinite;
+  --animate-star-twinkle-c: star-twinkle-c 10s ease-in-out infinite;
+  --animate-planet-drift-a: planet-drift-a 40s ease-in-out infinite;
+  --animate-planet-drift-b: planet-drift-b 55s ease-in-out infinite;
+}
+
+@keyframes star-twinkle-a {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.7; }
+}
+@keyframes star-twinkle-b {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.85; }
+}
+@keyframes star-twinkle-c {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@keyframes planet-drift-a {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(24px, 16px); }
+}
+@keyframes planet-drift-b {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-20px, -14px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-star-twinkle-a,
+  .animate-star-twinkle-b,
+  .animate-star-twinkle-c,
+  .animate-planet-drift-a,
+  .animate-planet-drift-b {
+    animation: none !important;
+  }
+}

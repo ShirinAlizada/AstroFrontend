@@ -1,12 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { SiteNav } from "@/components/SiteNav";
+import { Sidebar } from "@/components/Sidebar";
+import { CurrentPlanetsPanel } from "@/components/CurrentPlanetsPanel";
+import { SIGN_SYMBOLS, DAY_RULERS_AZ, sunSignFromDate } from "@/lib/astrology";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useAuth, useIsAdmin } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Ruh Astrolojiya — natal xəritə və horoskop platforması" },
+      { title: "Virgo Astrology — natal xəritə və horoskop platforması" },
       { name: "description", content: "Doğum məlumatlarına əsasən natal xəritə, günlük horoskop, uyğunluq təhlili, astroloq rezervasiyası və tranzit jurnalı." },
-      { property: "og:title", content: "Ruh Astrolojiya — Səmavi xəritən" },
+      { property: "og:title", content: "Virgo Astrology — Səmavi xəritən" },
       { property: "og:description", content: "Natal xəritə, horoskop, uyğunluq, astroloq rezervasiyası və tranzit jurnalı." },
       { property: "og:type", content: "website" },
     ],
@@ -15,179 +21,192 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { t } = useLanguage();
+  const { user } = useAuth();
+  const isAdmin = useIsAdmin(user?.id);
+
   return (
     <div className="min-h-screen bg-ink text-white font-sans antialiased">
       <SiteNav />
 
+      <div className="mx-auto max-w-7xl px-6 flex gap-8 items-start">
+        <Sidebar
+          isAdmin={isAdmin}
+          hasUser={Boolean(user)}
+          className="hidden lg:flex sticky top-20 shrink-0 w-52 py-1"
+        />
 
-      {/* HERO APP SCREEN */}
-      <div className="mx-auto max-w-6xl px-6 pt-4 pb-6">
-        <p className="text-gold text-xs tracking-[0.35em] uppercase mb-3">
-          Bugünkü səmavi xəritən
-        </p>
-        <h1 className="font-display leading-[0.95] text-5xl md:text-7xl max-w-3xl">
-          Yıldızlar bu gün <span className="text-goldsoft italic">səni</span>{" "}
-          bəyana çağırır
-        </h1>
+        <div className="min-w-0 flex-1">
+          {/* HERO */}
+          <div className="pt-4 pb-6">
+            <p className="text-gold text-xs tracking-[0.35em] uppercase mb-3">
+              {t("home.hero_kicker")}
+            </p>
+            <h1 className="font-display leading-[0.95] text-5xl md:text-7xl max-w-3xl">
+              {t("home.hero_title_1")} <span className="text-goldsoft italic">{t("home.hero_title_em")}</span>{" "}
+              {t("home.hero_title_2")}
+            </h1>
 
-        {/* the app screen */}
-        <div className="mt-8 rounded-[28px] border border-white/10 bg-gradient-to-b from-ink2 to-ink p-2 shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)]">
-          <div className="rounded-3xl bg-ink/60 p-5 md:p-7 grid lg:grid-cols-12 gap-5">
-            {/* chart */}
-            <div className="lg:col-span-5 rounded-2xl bg-celestial-card/60 border border-white/5 p-5 flex flex-col items-center justify-between min-h-[300px]">
-              <div className="self-start text-mist text-xs tracking-widest uppercase">
-                Səmavi dialoq
-              </div>
-              <div className="relative size-56 grid place-items-center">
-                <div className="absolute inset-0 rounded-full border border-violet/30"></div>
-                <div className="absolute inset-5 rounded-full border border-violet/20"></div>
-                <div className="absolute inset-10 rounded-full border border-gold/25"></div>
-                <div className="text-center">
-                  <div className="font-display text-4xl">Aslan</div>
-                  <div className="text-gold text-xs tracking-widest uppercase mt-1">
-                    Günəş · 14°
-                  </div>
-                </div>
-                <span className="absolute top-2 text-gold text-lg">☀</span>
-                <span className="absolute bottom-3 left-4 text-violet text-base">☾</span>
-                <span className="absolute top-8 right-2 text-goldsoft text-base">♃</span>
-                <span className="absolute bottom-8 right-6 text-mist text-base">♄</span>
-              </div>
-              <div className="self-start text-xs text-mist">
-                Dünyada qoyulmuş · 14:02
-              </div>
+            <DailyZodiacStrip />
+
+            <div className="mt-8">
+              <CurrentPlanetsPanel />
             </div>
+          </div>
 
-            {/* forecast */}
-            <div className="lg:col-span-7 flex flex-col gap-4">
-              <div className="rounded-2xl bg-celestial-card/60 border border-white/5 p-5">
-                <div className="flex items-center gap-2 text-gold text-xs tracking-widest uppercase mb-1">
-                  Ümumi
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex gap-1">
-                    <span className="size-2 rounded-full bg-gold"></span>
-                    <span className="size-2 rounded-full bg-gold"></span>
-                    <span className="size-2 rounded-full bg-gold"></span>
-                    <span className="size-2 rounded-full bg-gold"></span>
-                    <span className="size-2 rounded-full bg-white/15"></span>
-                  </div>
-                  <span className="text-sm text-mist">Qüvvə günündəsən</span>
-                </div>
-                <p className="mt-3 text-[15px] leading-relaxed text-white/85">
-                  Günəşin Aslanda olması özünə etimadı artırır. Səhər
-                  saatlarında qərar ver, axşamı isə bir qapını yumşaq aç —
-                  sevgi xəttində ay səninlədir.
+          {/* COMPATIBILITY STRIP */}
+          <div className="py-10">
+            <div className="rounded-3xl border border-white/10 bg-ink2/50 p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-6">
+              <div className="md:flex-1">
+                <p className="text-gold text-xs tracking-[0.3em] uppercase mb-2">
+                  {t("home.compat_kicker")}
+                </p>
+                <h2 className="font-display text-3xl">
+                  {t("home.compat_title")}
+                </h2>
+                <p className="text-mist text-sm mt-2">
+                  {t("home.compat_desc")}
                 </p>
               </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-2xl bg-celestial-card/60 border border-white/5 p-4">
-                  <div className="text-mist text-xs mb-2">Sevgi</div>
-                  <div className="font-display text-3xl text-goldsoft">
-                    92<span className="text-base text-mist">%</span>
-                  </div>
+              <div className="flex items-center gap-4">
+                <div className="size-16 rounded-full grid place-items-center border border-violet/40 text-violet text-2xl">
+                  ♓
                 </div>
-                <div className="rounded-2xl bg-celestial-card/60 border border-white/5 p-4">
-                  <div className="text-mist text-xs mb-2">Karyera</div>
-                  <div className="font-display text-3xl text-goldsoft">
-                    78<span className="text-base text-mist">%</span>
-                  </div>
+                <div className="size-16 rounded-full grid place-items-center border border-gold/40 text-goldsoft text-2xl">
+                  ♌
                 </div>
-                <div className="rounded-2xl bg-celestial-card/60 border border-white/5 p-4">
-                  <div className="text-mist text-xs mb-2">Maliyyə</div>
-                  <div className="font-display text-3xl text-goldsoft">
-                    64<span className="text-base text-mist">%</span>
+                <div className="text-right">
+                  <div className="font-display text-4xl text-gold">
+                    88<span className="text-lg text-mist">%</span>
+                  </div>
+                  <div className="text-mist text-xs tracking-widest uppercase">
+                    {t("home.compat_label")}
                   </div>
                 </div>
               </div>
+              <Link
+                to="/uygunluq"
+                className="md:ml-auto text-sm px-5 py-3 rounded-full bg-gold text-ink font-semibold hover:bg-goldsoft transition"
+              >
+                {t("home.compat_button")}
+              </Link>
+            </div>
+          </div>
+
+          {/* FEATURES */}
+          <div className="py-6">
+            <p className="text-gold text-xs tracking-[0.35em] uppercase mb-4">{t("home.platform_kicker")}</p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { to: "/profil", tKey: "home.f_profil_t", dKey: "home.f_profil_d" },
+                { to: "/xerite", tKey: "home.f_xerite_t", dKey: "home.f_xerite_d" },
+                { to: "/horoskop", tKey: "home.f_horoskop_t", dKey: "home.f_horoskop_d" },
+                { to: "/uygunluq", tKey: "home.f_uygunluq_t", dKey: "home.f_uygunluq_d" },
+                { to: "/numerologiya", tKey: "home.f_numerologiya_t", dKey: "home.f_numerologiya_d" },
+                { to: "/gunun-beledcisi", tKey: "home.f_beledci_t", dKey: "home.f_beledci_d" },
+                { to: "/astroloq", tKey: "home.f_astroloq_t", dKey: "home.f_astroloq_d" },
+                { to: "/jurnal", tKey: "home.f_jurnal_t", dKey: "home.f_jurnal_d" },
+                { to: "/forum", tKey: "home.f_forum_t", dKey: "home.f_forum_d" },
+                { to: "/qezet", tKey: "home.f_meqale_t", dKey: "home.f_meqale_d" },
+              ].map((f) => (
+                <Link
+                  key={f.to}
+                  to={f.to}
+                  className="rounded-2xl bg-celestial-card/60 border border-white/5 p-5 hover:border-gold/30 transition"
+                >
+                  <h3 className="font-display text-xl">{t(f.tKey)}</h3>
+                  <p className="text-sm text-mist mt-1.5 leading-relaxed">{t(f.dKey)}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="py-16">
+            <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-celestial-card/70 to-ink2 p-8 md:p-10 text-center">
+              <h3 className="font-display text-3xl md:text-4xl">
+                {t("home.cta_title")}
+              </h3>
+              <p className="text-mist text-sm mt-3">{t("home.cta_desc")}</p>
+              <Link
+                to="/auth"
+                className="inline-block mt-6 px-6 py-3 rounded-full bg-gold text-ink font-semibold text-sm hover:bg-goldsoft transition"
+              >
+                {t("home.cta_button")}
+              </Link>
             </div>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* COMPATIBILITY STRIP */}
-      <div className="mx-auto max-w-6xl px-6 py-10">
-        <div className="rounded-3xl border border-white/10 bg-ink2/50 p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-6">
-          <div className="md:flex-1">
-            <p className="text-gold text-xs tracking-[0.3em] uppercase mb-2">
-              Uyğunluq
-            </p>
-            <h2 className="font-display text-3xl">
-              Ən uyğun əlamətin: Balıqlar
-            </h2>
-            <p className="text-mist text-sm mt-2">
-              Ruhani dərinlikləriniz bir-birinə qarışır, sözsüz anlaşma təbii
-              cərəyan edir.
-            </p>
+const WEEKDAYS_SHORT_AZ = ["B.", "B.e.", "Ç.a.", "Ç.", "C.a.", "C.", "Ş."];
+
+interface DayCell {
+  date: Date;
+  label: string;
+  weekday: string;
+  sign: string;
+  dayRuler: string;
+  isToday: boolean;
+}
+
+function buildWeekStrip(): DayCell[] {
+  const today = new Date();
+  const cells: DayCell[] = [];
+  for (let offset = -3; offset <= 3; offset++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + offset);
+    const iso = d.toISOString().slice(0, 10);
+    cells.push({
+      date: d,
+      label: String(d.getDate()),
+      weekday: WEEKDAYS_SHORT_AZ[d.getDay()]!,
+      sign: sunSignFromDate(iso),
+      dayRuler: DAY_RULERS_AZ[d.getDay()] ?? "Günəş",
+      isToday: offset === 0,
+    });
+  }
+  return cells;
+}
+
+/**
+ * Gündəlik bürc təqvimi — cari həftənin hər günü üçün Günəş bürcünü və
+ * xaldey gün hakimini göstərən üfüqi zolaq. Client-only render (useEffect)
+ * ilə server/client arasında tarix uyğunsuzluğu (hydration mismatch) qarşısı alınır.
+ */
+function DailyZodiacStrip() {
+  const [days, setDays] = useState<DayCell[] | null>(null);
+
+  useEffect(() => {
+    setDays(buildWeekStrip());
+  }, []);
+
+  if (!days) {
+    return <div className="mt-6 h-24" aria-hidden="true" />;
+  }
+
+  return (
+    <div className="mt-6 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+      {days.map((d) => (
+        <div
+          key={d.label + d.weekday}
+          className={`shrink-0 w-20 rounded-2xl border p-3 text-center transition ${
+            d.isToday
+              ? "border-gold/60 bg-gold/10"
+              : "border-white/10 bg-celestial-card/50"
+          }`}
+        >
+          <div className="text-[10px] text-mist uppercase tracking-widest">{d.weekday}</div>
+          <div className={`font-display text-xl mt-0.5 ${d.isToday ? "text-gold" : "text-white"}`}>{d.label}</div>
+          <div className="text-lg mt-1" title={d.sign}>
+            {SIGN_SYMBOLS[d.sign] ?? ""}
           </div>
-          <div className="flex items-center gap-4">
-            <div className="size-16 rounded-full grid place-items-center border border-violet/40 text-violet text-2xl">
-              ♓
-            </div>
-            <div className="size-16 rounded-full grid place-items-center border border-gold/40 text-goldsoft text-2xl">
-              ♌
-            </div>
-            <div className="text-right">
-              <div className="font-display text-4xl text-gold">
-                88<span className="text-lg text-mist">%</span>
-              </div>
-              <div className="text-mist text-xs tracking-widest uppercase">
-                Uyğunluq
-              </div>
-            </div>
-          </div>
-          <Link
-            to="/uygunluq"
-            className="md:ml-auto text-sm px-5 py-3 rounded-full bg-gold text-ink font-semibold hover:bg-goldsoft transition"
-          >
-            Tam təhlil
-          </Link>
+          <div className="text-[10px] text-mist mt-0.5 truncate">{d.dayRuler}</div>
         </div>
-      </div>
-
-      {/* FEATURES */}
-      <div className="mx-auto max-w-6xl px-6 py-6">
-        <p className="text-gold text-xs tracking-[0.35em] uppercase mb-4">Platforma</p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { to: "/profil", t: "Profil və doğum məlumatı", d: "Doğum tarixi, dəqiq saat və yer əsasında şəxsi hesab." },
-            { to: "/xerite", t: "Natal xəritə", d: "Günəş, Ay və planetlərin bürc və ev mövqeləri." },
-            { to: "/horoskop", t: "Horoskop lentləri", d: "Günlük, həftəlik və aylıq proqnozlar." },
-            { to: "/uygunluq", t: "Uyğunluq (sinastriya)", d: "İki xəritənin müqayisəsi və uyğunluq balı." },
-            { to: "/astroloq", t: "Astroloq rezervasiyası", d: "Canlı və ya yazılı konsultasiya üçün vaxt seç." },
-            { to: "/jurnal", t: "Tranzit jurnalı", d: "Əhvalını yaz, planet təsirlərini izlə." },
-            { to: "/forum", t: "İcma forumu", d: "Tranzitlər və xəritə oxunuşları üzrə müzakirə." },
-            { to: "/qezet", t: "Səmavi qəzet", d: "Astroloji məqalələr və təhlillər." },
-          ].map((f) => (
-            <Link
-              key={f.to}
-              to={f.to}
-              className="rounded-2xl bg-celestial-card/60 border border-white/5 p-5 hover:border-gold/30 transition"
-            >
-              <h3 className="font-display text-xl">{f.t}</h3>
-              <p className="text-sm text-mist mt-1.5 leading-relaxed">{f.d}</p>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="mx-auto max-w-6xl px-6 py-16">
-        <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-celestial-card/70 to-ink2 p-8 md:p-10 text-center">
-          <h3 className="font-display text-3xl md:text-4xl">
-            Doğum vaxtını yaz, natal xəritəni gör
-          </h3>
-          <p className="text-mist text-sm mt-3">Qeydiyyat pulsuzdur — xəritən dərhal hesablanır.</p>
-          <Link
-            to="/auth"
-            className="inline-block mt-6 px-6 py-3 rounded-full bg-gold text-ink font-semibold text-sm hover:bg-goldsoft transition"
-          >
-            Başla
-          </Link>
-        </div>
-      </div>
-
+      ))}
     </div>
   );
 }

@@ -4,14 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Page } from "@/components/Page";
+import { formatLongDate } from "@/lib/date-format";
 
 export const Route = createFileRoute("/qezet/$slug")({
   head: () => ({
     meta: [
-      { title: "Məqalə — Səmavi Qəzet | Ruh Astrolojiya" },
-      { name: "description", content: "Ruh Astrolojiya Səmavi Qəzet bölməsindən astroloji məqalə." },
-      { property: "og:title", content: "Məqalə — Səmavi Qəzet" },
-      { property: "og:description", content: "Ruh Astrolojiya Səmavi Qəzet bölməsindən astroloji məqalə." },
+      { title: "Məqalə — Virgo Astrology| Virgo Astrology" },
+      { name: "description", content: "Virgo Astrology Məqalələr bölməsindən astroloji məqalə." },
+      { property: "og:title", content: "Məqalə — Virgo Astrology" },
+      { property: "og:description", content: "Virgo Astrology Məqalələr bölməsindən astroloji məqalə." },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -80,7 +81,7 @@ function ArticlePage() {
     const url = window.location.href;
     if (navigator.share) {
       try {
-        await navigator.share({ title: data?.title ?? "Səmavi Qəzet", url });
+        await navigator.share({ title: data?.title ?? "Virgo Astrology Məqalələr", url });
         return;
       } catch {
         /* istifadəçi ləğv etdi */
@@ -97,7 +98,7 @@ function ArticlePage() {
       <Page>
         <div className="py-20">
           <h1 className="font-display text-4xl">Məqalə tapılmadı</h1>
-          <Link to="/qezet" className="mt-4 inline-block text-goldsoft">← Qəzetə qayıt</Link>
+          <Link to="/qezet" className="mt-4 inline-block text-goldsoft">← Məqalələrə qayıt</Link>
         </div>
       </Page>
     );
@@ -109,14 +110,14 @@ function ArticlePage() {
     <Page>
       <div className="fixed left-0 top-0 h-[3px] bg-gold z-50 transition-[width]" style={{ width: `${progress}%` }} />
       <article className="py-6 max-w-3xl">
-        <Link to="/qezet" className="text-sm text-mist hover:text-goldsoft">← Səmavi Qəzet</Link>
+        <Link to="/qezet" className="text-sm text-mist hover:text-goldsoft">← Məqalələr</Link>
         <p className="mt-6 text-gold text-xs tracking-[0.35em] uppercase">{data.tag}</p>
         <h1 className="font-display text-4xl md:text-5xl mt-3 leading-tight">{data.title}</h1>
 
         <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-mist">
           {data.published_at && (
             <span>
-              {new Date(data.published_at).toLocaleDateString("az-AZ", { day: "numeric", month: "long", year: "numeric" })}
+              {formatLongDate(new Date(data.published_at), "az")}
             </span>
           )}
           <span>·</span>

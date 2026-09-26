@@ -12,6 +12,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { Toaster } from "sonner";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { StarField } from "../components/StarField";
+import { LanguageProvider } from "../lib/i18n/LanguageContext";
 
 function NotFoundComponent() {
   return (
@@ -78,14 +80,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Ruh Astrolojiya — Səmavi xəritən" },
-      { name: "description", content: "Gündəlik horoskop, doğum xəritəsi və uyğunluq tahlili. Ruh Astrolojiya ilə səmavi günlərinizi aydınlaşdırın." },
-      { name: "author", content: "Ruh Astrolojiya" },
-      { property: "og:title", content: "Ruh Astrolojiya — Səmavi xəritən" },
+      { title: "Virgo Astrology — Səmavi xəritən" },
+      { name: "description", content: "Gündəlik horoskop, doğum xəritəsi və uyğunluq tahlili. Virgo Astrology ilə səmavi günlərinizi aydınlaşdırın." },
+      { name: "author", content: "Virgo Astrology" },
+      { property: "og:title", content: "Virgo Astrology — Səmavi xəritən" },
       { property: "og:description", content: "Gündəlik horoskop, doğum xəritəsi və uyğunluq tahlili." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@ruhastrolojiya" },
+      { name: "twitter:site", content: "@virgoastrology" },
     ],
     links: [
       {
@@ -109,7 +111,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="az">
       <head>
         <HeadContent />
       </head>
@@ -126,9 +128,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-      <Toaster position="top-center" richColors />
+      <LanguageProvider>
+        <StarField />
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+        <Toaster position="top-center" richColors />
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

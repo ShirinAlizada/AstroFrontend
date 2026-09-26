@@ -3,13 +3,15 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Page, PageHeader } from "@/components/Page";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { formatLongDate } from "@/lib/date-format";
 
 export const Route = createFileRoute("/qezet/")({
   head: () => ({
     meta: [
-      { title: "Səmavi Qəzet — Ruh Astrolojiya" },
+      { title: "Məqalələr — Virgo Astrology" },
       { name: "description", content: "Astroloji məqalələr, ay təqvimləri və səmavi hadisələrin təhlili." },
-      { property: "og:title", content: "Səmavi Qəzet — Ruh Astrolojiya" },
+      { property: "og:title", content: "Məqalələr — Virgo Astrology" },
       { property: "og:description", content: "Astroloji məqalələr, ay təqvimləri və səmavi hadisələrin təhlili." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -23,14 +25,15 @@ export function readingTime(text: string) {
   return Math.max(1, Math.round(words / 180));
 }
 
-function fmt(date: string | null) {
+function fmt(date: string | null, lang: "az" | "en" | "ru") {
   if (!date) return "";
-  return new Date(date).toLocaleDateString("az-AZ", { day: "numeric", month: "long", year: "numeric" });
+  return formatLongDate(new Date(date), lang);
 }
 
 const PAGE_SIZE = 6;
 
 function QezetPage() {
+  const { t, lang } = useLanguage();
   const [tag, setTag] = useState<string>("hamısı");
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<"yeni" | "populyar">("yeni");
@@ -70,25 +73,25 @@ function QezetPage() {
   return (
     <Page>
       <PageHeader
-        kicker="Səmavi Qəzet"
-        title="Astroloji düşüncələr"
-        subtitle="Planet hərəkətləri, ay fazaları və doğum xəritəsi üzərinə oxunaqlı yazılar."
+        kicker={t("page.qezet.kicker")}
+        title={t("page.qezet.title")}
+        subtitle={t("page.qezet.subtitle")}
       />
 
       <div className="flex flex-wrap items-center gap-2 mb-8">
-        {tags.map((t) => (
+        {tags.map((tg) => (
           <button
-            key={t}
+            key={tg}
             type="button"
             onClick={() => {
-              setTag(t);
+              setTag(tg);
               setLimit(PAGE_SIZE);
             }}
             className={`text-sm px-4 py-2 rounded-full border transition ${
-              tag === t ? "border-gold bg-gold/15 text-goldsoft" : "border-white/10 text-mist hover:border-gold/40"
+              tag === tg ? "border-gold bg-gold/15 text-goldsoft" : "border-white/10 text-mist hover:border-gold/40"
             }`}
           >
-            {t}
+            {tg === "hamısı" ? t("common.hamisi") : tg}
           </button>
         ))}
         <div className="ml-auto flex items-center gap-2">
@@ -100,7 +103,7 @@ function QezetPage() {
                 onClick={() => setSort(s)}
                 className={`px-4 py-2 transition ${sort === s ? "bg-gold/15 text-goldsoft" : "text-mist hover:text-white"}`}
               >
-                {s === "yeni" ? "Ən yeni" : "Ən çox oxunan"}
+                {s === "yeni" ? t("qezet.newest") : t("qezet.most_read")}
               </button>
             ))}
           </div>
@@ -110,14 +113,14 @@ function QezetPage() {
               setQ(e.target.value);
               setLimit(PAGE_SIZE);
             }}
-            placeholder="Axtar…"
+            placeholder={t("common.axtar")}
             className="w-44 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm placeholder:text-mist/70 focus:outline-none focus:border-gold/50"
           />
         </div>
       </div>
 
-      {isLoading && <p className="text-mist">Yüklənir…</p>}
-      {!isLoading && filtered.length === 0 && <p className="text-mist">Axtarışa uyğun məqalə tapılmadı.</p>}
+      {isLoading && <p className="text-mist">{t("common.yuklenir")}</p>}
+      {!isLoading && filtered.length === 0 && <p className="text-mist">{t("qezet.no_results")}</p>}
 
       <div className="grid lg:grid-cols-[1fr_300px] gap-8 items-start">
         <div>
@@ -131,9 +134,9 @@ function QezetPage() {
               <h2 className="font-display text-3xl md:text-4xl mt-3 max-w-3xl leading-tight">{lead.title}</h2>
               {lead.excerpt && <p className="mt-4 text-mist max-w-2xl leading-relaxed">{lead.excerpt}</p>}
               <p className="mt-5 text-xs text-mist/80">
-                {fmt(lead.published_at)} · {readingTime(lead.body)} dəq oxu · {lead.views} baxış
+                {fmt(lead.published_at, lang)} · {t("qezet.reading_time_n").replace("{n}", String(readingTime(lead.body)))} · {t("qezet.views_n").replace("{n}", String(lead.views))}
               </p>
-              <span className="mt-4 inline-block text-sm text-goldsoft">Davamını oxu →</span>
+              <span className="mt-4 inline-block text-sm text-goldsoft">{t("qezet.read_more")}</span>
             </Link>
           )}
 
@@ -149,9 +152,9 @@ function QezetPage() {
                 <h3 className="font-display text-2xl mt-3 leading-tight">{a.title}</h3>
                 {a.excerpt && <p className="mt-3 text-sm text-mist leading-relaxed">{a.excerpt}</p>}
                 <p className="mt-4 text-xs text-mist/80">
-                  {fmt(a.published_at)} · {readingTime(a.body)} dəq oxu · {a.views} baxış
+                  {fmt(a.published_at, lang)} · {t("qezet.reading_time_n").replace("{n}", String(readingTime(a.body)))} · {t("qezet.views_n").replace("{n}", String(a.views))}
                 </p>
-                <span className="mt-3 inline-block text-sm text-goldsoft">Davamını oxu →</span>
+                <span className="mt-3 inline-block text-sm text-goldsoft">{t("qezet.read_more")}</span>
               </Link>
             ))}
           </div>
@@ -163,14 +166,14 @@ function QezetPage() {
                 onClick={() => setLimit((l) => l + PAGE_SIZE)}
                 className="px-6 py-3 rounded-full border border-gold/40 text-goldsoft hover:bg-gold/10 transition text-sm"
               >
-                Daha çox məqalə
+                {t("qezet.load_more")}
               </button>
             </div>
           )}
         </div>
 
         <aside className="rounded-2xl border border-white/8 bg-celestial-card/40 p-6 lg:sticky lg:top-24">
-          <h4 className="text-xs tracking-[0.3em] uppercase text-gold">Ən çox oxunanlar</h4>
+          <h4 className="text-xs tracking-[0.3em] uppercase text-gold">{t("qezet.most_read_heading")}</h4>
           <ol className="mt-4 space-y-4">
             {popular.map((a, i) => (
               <li key={a.id} className="flex gap-3">
@@ -181,11 +184,11 @@ function QezetPage() {
                   className="text-sm leading-snug hover:text-goldsoft transition"
                 >
                   {a.title}
-                  <span className="block text-xs text-mist/70 mt-1">{a.views} baxış</span>
+                  <span className="block text-xs text-mist/70 mt-1">{t("qezet.views_n").replace("{n}", String(a.views))}</span>
                 </Link>
               </li>
             ))}
-            {popular.length === 0 && <li className="text-sm text-mist">Hələ məqalə yoxdur.</li>}
+            {popular.length === 0 && <li className="text-sm text-mist">{t("qezet.no_articles_yet")}</li>}
           </ol>
         </aside>
       </div>

@@ -7,9 +7,9 @@ import { Page, PageHeader } from "@/components/Page";
 export const Route = createFileRoute("/_authenticated/rezervasiyalar")({
   head: () => ({
     meta: [
-      { title: "Rezervasiyalarım — Ruh Astrolojiya" },
+      { title: "Rezervasiyalarım — Virgo Astrology" },
       { name: "description", content: "Astroloqlarla canlı və yazılı konsultasiya görüşlərini izlə və idarə et." },
-      { property: "og:title", content: "Rezervasiyalarım — Ruh Astrolojiya" },
+      { property: "og:title", content: "Rezervasiyalarım — Virgo Astrology" },
       { property: "og:description", content: "Konsultasiya görüşlərinin siyahısı və statusu." },
     ],
   }),
@@ -76,7 +76,7 @@ function BookingsPage() {
               </span>
             </div>
             <div className="mt-4 text-sm text-mist space-y-1">
-              <div>Tarix: <span className="text-white">{new Date(b.scheduled_at).toLocaleString("az-AZ")}</span></div>
+              <div>Tarix: <span className="text-white">{new Date(b.scheduled_at).toLocaleString("az-AZ", { hour12: false })}</span></div>
               <div>Növ: <span className="text-white">{b.session_type === "live" ? "Canlı seans" : "Yazılı təhlil"}</span></div>
               {b.note && <div>Qeyd: <span className="text-white">{b.note}</span></div>}
             </div>

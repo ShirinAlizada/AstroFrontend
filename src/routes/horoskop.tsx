@@ -3,12 +3,13 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Page, PageHeader } from "@/components/Page";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { SIGNS_AZ, SIGN_SYMBOLS } from "@/lib/astrology";
 
 export const Route = createFileRoute("/horoskop")({
   head: () => ({
     meta: [
-      { title: "Horoskop — günlük, həftəlik, aylıq | Ruh Astrolojiya" },
+      { title: "Horoskop — günlük, həftəlik, aylıq | Virgo Astrology" },
       { name: "description", content: "12 bürc üçün günlük, həftəlik və aylıq horoskop: sevgi, karyera və maliyyə proqnozları." },
       { property: "og:title", content: "Horoskop — günlük, həftəlik, aylıq" },
       { property: "og:description", content: "12 bürc üçün günlük, həftəlik və aylıq astroloji proqnozlar." },
@@ -19,12 +20,13 @@ export const Route = createFileRoute("/horoskop")({
 });
 
 const PERIODS = [
-  { key: "daily", label: "Günlük" },
-  { key: "weekly", label: "Həftəlik" },
-  { key: "monthly", label: "Aylıq" },
+  { key: "daily", labelKey: "horoskop.daily" },
+  { key: "weekly", labelKey: "horoskop.weekly" },
+  { key: "monthly", labelKey: "horoskop.monthly" },
 ] as const;
 
 function HoroscopePage() {
+  const { t } = useLanguage();
   const [sign, setSign] = useState<string>("Aslan");
   const [period, setPeriod] = useState<string>("daily");
 
@@ -47,9 +49,9 @@ function HoroscopePage() {
   return (
     <Page>
       <PageHeader
-        kicker="Horoskop"
-        title="Bürcünü seç, səmanı oxu"
-        subtitle="Günlük, həftəlik və aylıq proqnozlar sevgi, karyera və maliyyə göstəriciləri ilə birlikdə."
+        kicker={t("page.horoskop.kicker")}
+        title={t("page.horoskop.title")}
+        subtitle={t("page.horoskop.subtitle")}
       />
 
       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-8">
@@ -70,7 +72,7 @@ function HoroscopePage() {
             className={`text-sm px-5 py-2 rounded-full border transition ${
               period === p.key ? "border-gold bg-gold/15 text-goldsoft" : "border-white/10 text-mist hover:border-gold/40"
             }`}>
-            {p.label}
+            {t(p.labelKey)}
           </button>
         ))}
       </div>
@@ -81,21 +83,21 @@ function HoroscopePage() {
           <div>
             <h2 className="font-display text-3xl">{sign}</h2>
             <p className="text-mist text-xs tracking-widest uppercase">
-              {PERIODS.find((p) => p.key === period)?.label} proqnoz
+              {t(PERIODS.find((p) => p.key === period)?.labelKey ?? "horoskop.daily")} {t("horoskop.proqnoz")}
             </p>
           </div>
         </div>
 
-        {isLoading && <p className="text-mist mt-6">Yüklənir…</p>}
-        {!isLoading && !data && <p className="text-mist mt-6">Bu dövr üçün proqnoz hələ hazır deyil.</p>}
+        {isLoading && <p className="text-mist mt-6">{t("common.yuklenir")}</p>}
+        {!isLoading && !data && <p className="text-mist mt-6">{t("horoskop.not_ready")}</p>}
 
         {data && (
           <>
             <p className="mt-5 text-[15px] leading-relaxed text-white/85 max-w-3xl">{data.content}</p>
             <div className="grid grid-cols-3 gap-3 mt-6 max-w-xl">
-              <Meter label="Sevgi" value={data.love} />
-              <Meter label="Karyera" value={data.career} />
-              <Meter label="Maliyyə" value={data.finance} />
+              <Meter label={t("home.demo_sevgi")} value={data.love} />
+              <Meter label={t("home.demo_karyera")} value={data.career} />
+              <Meter label={t("home.demo_maliyye")} value={data.finance} />
             </div>
           </>
         )}

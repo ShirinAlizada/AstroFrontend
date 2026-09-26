@@ -105,6 +105,7 @@ export interface PlanetPosition {
   name: string;
   sign: string;
   degree: number;
+  minute: number;
   house: number | null;
   retrograde: boolean;
 }
@@ -113,15 +114,42 @@ export interface HousePosition {
   index: number;
   sign: string;
   degree: number;
+  minute: number;
 }
 
 export interface NatalChart {
   planets: PlanetPosition[];
   houses: HousePosition[];
-  ascendant: { sign: string; degree: number };
-  midheaven: { sign: string; degree: number };
+  ascendant: { sign: string; degree: number; minute: number };
+  midheaven: { sign: string; degree: number; minute: number };
   sun: string;
   moon: string;
+}
+
+/** Ondalık dərəcəni (bürc daxilində, 0-30°) dəqiq° və dəqiqəyə bölür. */
+function splitDegree(rawWithinSign: number): { degree: number; minute: number } {
+  const totalMinutes = Math.round(rawWithinSign * 60);
+  let degree = Math.floor(totalMinutes / 60);
+  let minute = totalMinutes % 60;
+  if (degree >= 30) {
+    degree = 29;
+    minute = 59;
+  }
+  return { degree, minute };
+}
+
+/** "27°40′" formatında dəqiq dərəcə mətni. `minute` hər hansı səbəbdən (köhnə keş, əskik məlumat) rəqəm olmasa belə "undefined" göstərilməsin deyə 0-a düşür. */
+export function formatDegree(degree: number, minute: number): string {
+  const safeDeg = Number.isFinite(degree) ? degree : 0;
+  const safeMin = Number.isFinite(minute) ? minute : 0;
+  return `${safeDeg}°${String(safeMin).padStart(2, "0")}′`;
+}
+
+/** Bürc+dərəcədən 0-360° ekliptik uzunluğa çevirir */
+export function toLongitude(sign: string, degree: number): number {
+  const idx = SIGNS_AZ.indexOf(sign as SignAz);
+  if (idx < 0) return degree;
+  return idx * 30 + degree;
 }
 
 function az(signKey: string | undefined): string {
@@ -160,19 +188,22 @@ export function computeNatalChart(input: BirthInput): NatalChart {
 
   const planets: PlanetPosition[] = (horoscope.CelestialBodies.all as any[])
     .filter((b) => BODY_EN_TO_AZ[String(b.key).toLowerCase()])
-    .map((b) => ({
-      name: BODY_EN_TO_AZ[String(b.key).toLowerCase()] ?? b.label,
-      sign: az(b.Sign?.key),
-      degree: Math.floor(Number(b.ChartPosition?.Ecliptic?.DecimalDegrees ?? 0) % 30),
-      house: b.House?.id ?? null,
-      retrograde: Boolean(b.isRetrograde),
-    }));
+    .map((b) => {
+      const { degree, minute } = splitDegree(Number(b.ChartPosition?.Ecliptic?.DecimalDegrees ?? 0) % 30);
+      return {
+        name: BODY_EN_TO_AZ[String(b.key).toLowerCase()] ?? b.label,
+        sign: az(b.Sign?.key),
+        degree,
+        minute,
+        house: b.House?.id ?? null,
+        retrograde: Boolean(b.isRetrograde),
+      };
+    });
 
-  const houses: HousePosition[] = (horoscope.Houses as any[]).map((h, i) => ({
-    index: i + 1,
-    sign: az(h.Sign?.key),
-    degree: Math.floor(Number(h.ChartPosition?.StartPosition?.Ecliptic?.DecimalDegrees ?? 0) % 30),
-  }));
+  const houses: HousePosition[] = (horoscope.Houses as any[]).map((h, i) => {
+    const { degree, minute } = splitDegree(Number(h.ChartPosition?.StartPosition?.Ecliptic?.DecimalDegrees ?? 0) % 30);
+    return { index: i + 1, sign: az(h.Sign?.key), degree, minute };
+  });
 
   const ascRaw = horoscope.Ascendant as any;
   const mcRaw = horoscope.Midheaven as any;
@@ -183,10 +214,12 @@ export function computeNatalChart(input: BirthInput): NatalChart {
     ascendant: {
       sign: az(ascRaw?.Sign?.key),
       degree: houses[0]?.degree ?? 0,
+      minute: houses[0]?.minute ?? 0,
     },
     midheaven: {
       sign: az(mcRaw?.Sign?.key),
       degree: houses[9]?.degree ?? 0,
+      minute: houses[9]?.minute ?? 0,
     },
     sun: planets.find((p) => p.name === "Günəş")?.sign ?? "—",
     moon: planets.find((p) => p.name === "Ay")?.sign ?? "—",
@@ -206,7 +239,7 @@ function signIndex(sign: string) {
   return SIGNS_AZ.indexOf(sign as SignAz);
 }
 
-function pairScore(a: string, b: string): number {
+export function pairScore(a: string, b: string): number {
   const ia = signIndex(a);
   const ib = signIndex(b);
   if (ia < 0 || ib < 0) return 50;
@@ -260,6 +293,69 @@ export function computeSynastry(a: NatalChart, b: NatalChart): SynastryResult {
   return { overall, love, friendship, communication, notes };
 }
 
+/** Aspekt adı (bürc fərqinə görə) */
+export function aspectNameAz(a: string, b: string): string {
+  const ia = signIndex(a);
+  const ib = signIndex(b);
+  if (ia < 0 || ib < 0) return "—";
+  const diff = Math.min((ia - ib + 12) % 12, (ib - ia + 12) % 12);
+  const names: Record<number, string> = {
+    0: "Konyunksiya",
+    1: "Yarımsekstil",
+    2: "Sekstil",
+    3: "Kvadrat",
+    4: "Trigon",
+    5: "Kvinkuns",
+    6: "Oppozisiya",
+  };
+  return names[diff] ?? "—";
+}
+
+export interface PlanetPairDetail {
+  planet: string;
+  symbol: string;
+  signA: string;
+  signB: string;
+  elementA: string;
+  elementB: string;
+  aspect: string;
+  score: number;
+}
+
+const SYNASTRY_PLANETS = ["Günəş", "Ay", "Venera", "Mars", "Merkuri"] as const;
+
+/** Hər planet üçün ayrı-ayrı cüt təhlili (Cütlük Xəritəsi səhifəsinin genişləndirilmiş görünüşü üçün) */
+export function synastryDetails(a: NatalChart, b: NatalChart): PlanetPairDetail[] {
+  const get = (c: NatalChart, name: string) => c.planets.find((p) => p.name === name)?.sign ?? "—";
+
+  return SYNASTRY_PLANETS.map((planet) => {
+    const signA = get(a, planet);
+    const signB = get(b, planet);
+    return {
+      planet,
+      symbol: BODY_SYMBOLS[planet] ?? "•",
+      signA,
+      signB,
+      elementA: ELEMENTS[signA] ?? "—",
+      elementB: ELEMENTS[signB] ?? "—",
+      aspect: aspectNameAz(signA, signB),
+      score: pairScore(signA, signB),
+    };
+  });
+}
+
+const PLANET_MEANING_AZ: Record<string, string> = {
+  Günəş: "əsas xarakter və ümumi ritm",
+  Ay: "emosional ehtiyaclar və daxili təhlükəsizlik",
+  Venera: "sevgi dili, estetik zövq və cazibə",
+  Mars: "ehtiras, motivasiya və münaqişə tərzi",
+  Merkuri: "ünsiyyət tərzi və düşüncə axını",
+};
+
+export function planetMeaningAz(planet: string): string {
+  return PLANET_MEANING_AZ[planet] ?? "";
+}
+
 /** Yalnız tarixdən Günəş bürcünü tapır (təxmini sərhədlər) */
 export function sunSignFromDate(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00Z");
@@ -287,6 +383,110 @@ export function sunSignFromDate(dateStr: string): string {
   if (m === 2) sign = day >= 19 ? "Balıqlar" : "Dolça";
   if (m === 3 && day < 21) sign = "Balıqlar";
   return sign;
+}
+
+/** Klassik (xaldey) günlərin hakim planetləri */
+export const DAY_RULERS_AZ: Record<number, string> = {
+  0: "Günəş",
+  1: "Ay",
+  2: "Mars",
+  3: "Merkuri",
+  4: "Yupiter",
+  5: "Venera",
+  6: "Saturn",
+};
+
+export interface TodaysSky {
+  dayRuler: string;
+  moonSign: string;
+  moonDegree: number;
+}
+
+/** Bugünkü hakim planet və Ayın hansı bürcdə olduğu (naveqasiya çipi üçün) */
+export function todaysSky(): TodaysSky {
+  const now = new Date();
+  const baku = CITIES[0]!;
+
+  const origin = new Origin({
+    year: now.getFullYear(),
+    month: now.getMonth(),
+    date: now.getDate(),
+    hour: now.getHours(),
+    minute: now.getMinutes(),
+    latitude: baku.lat,
+    longitude: baku.lon,
+  });
+
+  const horoscope = new Horoscope({
+    origin,
+    houseSystem: "placidus",
+    zodiac: "tropical",
+    aspectPoints: ["bodies"],
+    aspectWithPoints: ["bodies"],
+    aspectTypes: ["major"],
+    language: "en",
+  });
+
+  const moon = (horoscope.CelestialBodies.all as any[]).find(
+    (b) => String(b.key).toLowerCase() === "moon",
+  );
+
+  return {
+    dayRuler: DAY_RULERS_AZ[now.getDay()] ?? "Günəş",
+    moonSign: az(moon?.Sign?.key),
+    moonDegree: Math.floor(Number(moon?.ChartPosition?.Ecliptic?.DecimalDegrees ?? 0) % 30),
+  };
+}
+
+/** Əsas (major) aspektlər — bucaq və icazə verilən orb (dərəcə fərqi) */
+export const ASPECT_DEFS = [
+  { key: "conjunction", nameAz: "Konyunksiya", symbol: "☌", angle: 0, orb: 8, color: "#e7ce88" },
+  { key: "sextile", nameAz: "Sekstil", symbol: "⚹", angle: 60, orb: 4, color: "#8b7bef" },
+  { key: "square", nameAz: "Kvadrat", symbol: "□", angle: 90, orb: 6, color: "#f26d6d" },
+  { key: "trine", nameAz: "Trigon", symbol: "△", angle: 120, orb: 6, color: "#6ddc8f" },
+  { key: "opposition", nameAz: "Oppozisiya", symbol: "☍", angle: 180, orb: 8, color: "#f26d6d" },
+] as const;
+
+export interface AspectHit {
+  a: string;
+  b: string;
+  aspect: (typeof ASPECT_DEFS)[number];
+  orb: number; // dəqiq bucaqdan fərq (dərəcə)
+}
+
+/** Xəritə daxilindəki planetlər arasında əsas aspektləri hesablayır (orb daxilində olanlar) */
+export function computeAspects(chart: NatalChart): AspectHit[] {
+  const bodies = chart.planets;
+  const hits: AspectHit[] = [];
+
+  for (let i = 0; i < bodies.length; i++) {
+    for (let j = i + 1; j < bodies.length; j++) {
+      const la = toLongitude(bodies[i]!.sign, bodies[i]!.degree);
+      const lb = toLongitude(bodies[j]!.sign, bodies[j]!.degree);
+      let diff = Math.abs(la - lb) % 360;
+      if (diff > 180) diff = 360 - diff;
+
+      for (const def of ASPECT_DEFS) {
+        const orb = Math.abs(diff - def.angle);
+        if (orb <= def.orb) {
+          hits.push({ a: bodies[i]!.name, b: bodies[j]!.name, aspect: def, orb: Math.round(orb * 10) / 10 });
+          break; // hər cüt üçün ən yaxın aspekti götür
+        }
+      }
+    }
+  }
+
+  return hits.sort((x, y) => x.orb - y.orb);
+}
+
+/** Bugünkü/hazırkı planet xəritəsini (Bakı vaxtı üzrə) natal xəritə formatında qaytarır — "Cari planetlər" paneli üçün. */
+export function computeCurrentSky(): NatalChart {
+  const now = new Date();
+  const baku = CITIES[0]!;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const time = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  return computeNatalChart({ date, time, latitude: baku.lat, longitude: baku.lon });
 }
 
 /** Sadə şəhər kataloqu (doğum yeri seçimi üçün) */

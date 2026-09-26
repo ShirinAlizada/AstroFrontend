@@ -4,9 +4,9 @@ import { SiteNav } from "@/components/SiteNav";
 export const Route = createFileRoute("/metnu")({
   head: () => ({
     meta: [
-      { title: "Mətnu — Ruh Astrolojiya" },
+      { title: "Mətnu — Virgo Astrology" },
       { name: "description", content: "Astroloji məsləhət və xidmətlər üçün bizimlə əlaqə saxlayın." },
-      { property: "og:title", content: "Mətnu — Ruh Astrolojiya" },
+      { property: "og:title", content: "Mətnu — Virgo Astrology" },
       { property: "og:description", content: "Astroloji məsləhət və xidmətlər üçün bizimlə əlaqə saxlayın." },
     ],
   }),

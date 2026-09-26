@@ -9,9 +9,9 @@ import { useAuth } from "@/hooks/useAuth";
 export const Route = createFileRoute("/forum/$topicId")({
   head: () => ({
     meta: [
-      { title: "Mövzu — Ruh Astrolojiya forumu" },
+      { title: "Mövzu — Virgo Astrology forumu" },
       { name: "description", content: "Astrologiya forumunda mövzu müzakirəsi və icma cavabları." },
-      { property: "og:title", content: "Mövzu — Ruh Astrolojiya forumu" },
+      { property: "og:title", content: "Mövzu — Virgo Astrology forumu" },
       { property: "og:description", content: "Forum mövzusu və cavablar." },
       { property: "og:type", content: "article" },
     ],
@@ -84,7 +84,7 @@ function TopicPage() {
         <article className="mt-5 rounded-2xl bg-celestial-card/60 border border-white/5 p-6">
           <div className="flex items-center gap-3 text-xs text-mist">
             <span className="px-2.5 py-1 rounded-full border border-violet/30 text-violet">{topic.category}</span>
-            <span>{new Date(topic.created_at).toLocaleString("az-AZ")}</span>
+            <span>{new Date(topic.created_at).toLocaleString("az-AZ", { hour12: false })}</span>
           </div>
           <h1 className="font-display text-3xl md:text-4xl mt-3">{topic.title}</h1>
           <p className="text-xs text-mist mt-1">{topic.author_name}</p>

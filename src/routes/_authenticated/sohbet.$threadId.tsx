@@ -11,9 +11,9 @@ import { streamAi, type ChatTurn } from "@/lib/ai-client";
 export const Route = createFileRoute("/_authenticated/sohbet/$threadId")({
   head: () => ({
     meta: [
-      { title: "AI Astroloq söhbəti — Ruh Astrolojiya" },
+      { title: "AI Astroloq söhbəti — Virgo Astrology" },
       { name: "description", content: "Bürclər, doğum xəritəsi və tranzitlər haqqında AI astroloq ilə canlı söhbət." },
-      { property: "og:title", content: "AI Astroloq söhbəti — Ruh Astrolojiya" },
+      { property: "og:title", content: "AI Astroloq söhbəti — Virgo Astrology" },
       { property: "og:description", content: "Astroloji suallarınıza dərhal cavab alın." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
