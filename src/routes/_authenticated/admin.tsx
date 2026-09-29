@@ -13,6 +13,7 @@ import {
   adminDeleteUser,
   type AssignableRole,
 } from "@/lib/admin-users.functions";
+import type { ShopCategory } from "@/lib/shop";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -33,6 +34,8 @@ const TABS = [
   { key: "bookings", label: "Rezervasiyalar" },
   { key: "articles", label: "Məqalə" },
   { key: "content", label: "Horoskop" },
+  { key: "shop", label: "Mağaza" },
+  { key: "shop-orders", label: "Mağaza sifarişləri" },
 ] as const;
 
 function AdminPage() {
@@ -69,6 +72,8 @@ function AdminPage() {
       {tab === "astrologers" && <AstrologersTab />}
       {tab === "bookings" && <BookingsTab />}
       {tab === "content" && <ContentTab />}
+      {tab === "shop" && <ShopTab />}
+      {tab === "shop-orders" && <ShopOrdersTab />}
     </Page>
   );
 }
@@ -429,6 +434,366 @@ function ContentTab() {
             onBlur={(e) => e.target.value !== h.content && update.mutate({ id: h.id, content: e.target.value })}
             className="mt-2 w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:border-gold/50" />
           <p className="text-xs text-mist mt-1">Dəyişiklik sahədən çıxanda yadda saxlanır.</p>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+const SHOP_CATEGORIES: { key: ShopCategory; label: string }[] = [
+  { key: "tarot", label: "Tarot" },
+  { key: "kristal", label: "Kristallar" },
+  { key: "sham", label: "Şamlar" },
+  { key: "kitab", label: "Kitablar" },
+];
+
+type ShopProductForm = {
+  id?: string;
+  category: ShopCategory;
+  slug: string;
+  name: string;
+  name_en: string;
+  name_ru: string;
+  description: string;
+  description_en: string;
+  description_ru: string;
+  price_azn: number;
+  unit_label: string;
+  image_url: string;
+  sort_order: number;
+  stock_qty: number;
+  is_active: boolean;
+};
+
+const EMPTY_SHOP_PRODUCT: ShopProductForm = {
+  category: "tarot",
+  slug: "",
+  name: "",
+  name_en: "",
+  name_ru: "",
+  description: "",
+  description_en: "",
+  description_ru: "",
+  price_azn: 0,
+  unit_label: "",
+  image_url: "",
+  sort_order: 0,
+  stock_qty: 20,
+  is_active: true,
+};
+
+function ShopTab() {
+  const queryClient = useQueryClient();
+  const [filter, setFilter] = useState<"all" | ShopCategory>("all");
+  const [form, setForm] = useState<ShopProductForm>(EMPTY_SHOP_PRODUCT);
+
+  const { data } = useQuery({
+    queryKey: ["admin-shop-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("shop_products")
+        .select("*")
+        .order("category", { ascending: true })
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const filtered = (data ?? []).filter((p) => filter === "all" || p.category === filter);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      if (form.name.trim().length < 2) throw new Error("Ad yazın");
+      if (!form.price_azn || form.price_azn <= 0) throw new Error("Qiymət düzgün deyil");
+      const payload = {
+        category: form.category,
+        slug: form.slug.trim() || slugify(form.name),
+        name: form.name.trim(),
+        name_en: form.name_en.trim() || null,
+        name_ru: form.name_ru.trim() || null,
+        description: form.description.trim(),
+        description_en: form.description_en.trim() || null,
+        description_ru: form.description_ru.trim() || null,
+        price_azn: Number(form.price_azn),
+        unit_label: form.unit_label.trim() || null,
+        image_url: form.image_url.trim() || null,
+        sort_order: Number(form.sort_order) || 0,
+        stock_qty: Math.max(0, Number(form.stock_qty) || 0),
+        is_active: form.is_active,
+      };
+      if (form.id) {
+        const { error } = await supabase.from("shop_products").update(payload).eq("id", form.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("shop_products").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Yadda saxlanıldı");
+      setForm(EMPTY_SHOP_PRODUCT);
+      queryClient.invalidateQueries({ queryKey: ["admin-shop-products"] });
+      queryClient.invalidateQueries({ queryKey: ["shop-products"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const toggleActive = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase.from("shop_products").update({ is_active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-shop-products"] });
+      queryClient.invalidateQueries({ queryKey: ["shop-products"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("shop_products").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Silindi");
+      queryClient.invalidateQueries({ queryKey: ["admin-shop-products"] });
+      queryClient.invalidateQueries({ queryKey: ["shop-products"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // Tam formu açmadan sürətli anbar tənzimləməsi (+1/-1). Azaltma
+  // decrement_shop_stock ilə atomik yoxlanılır — stok 0-a çatıbsa "-" heç nə
+  // etmir (server tərəfdə rədd olunur, mənfiyə düşmür).
+  const adjustStock = useMutation({
+    mutationFn: async ({ id, delta }: { id: string; delta: number }) => {
+      if (delta > 0) {
+        const { error } = await supabase.rpc("increment_shop_stock", { _product_id: id, _qty: delta });
+        if (error) throw error;
+      } else if (delta < 0) {
+        const { data: ok, error } = await supabase.rpc("decrement_shop_stock", { _product_id: id, _qty: -delta });
+        if (error) throw error;
+        if (!ok) throw new Error("Stok 0-dan aşağı düşə bilməz");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-shop-products"] });
+      queryClient.invalidateQueries({ queryKey: ["shop-products"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const field = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm placeholder:text-mist/70 focus:outline-none focus:border-gold/50";
+
+  return (
+    <div className="grid lg:grid-cols-12 gap-6">
+      <div className="lg:col-span-7 space-y-3">
+        <div className="flex flex-wrap gap-2 mb-1">
+          <button type="button" onClick={() => setFilter("all")}
+            className={`text-xs px-3.5 py-1.5 rounded-full border transition ${filter === "all" ? "border-gold text-goldsoft" : "border-white/15 text-mist"}`}>
+            Hamısı
+          </button>
+          {SHOP_CATEGORIES.map((c) => (
+            <button key={c.key} type="button" onClick={() => setFilter(c.key)}
+              className={`text-xs px-3.5 py-1.5 rounded-full border transition ${filter === c.key ? "border-gold text-goldsoft" : "border-white/15 text-mist"}`}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+        {filtered.map((p) => (
+          <Card key={p.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full border border-white/15 text-mist uppercase tracking-wide">
+                    {SHOP_CATEGORIES.find((c) => c.key === p.category)?.label ?? p.category}
+                  </span>
+                  {!p.is_active && <span className="text-[10px] px-2 py-0.5 rounded-full border border-red-400/30 text-red-300">Deaktiv</span>}
+                </div>
+                <div className="font-display text-lg mt-1.5 truncate">{p.name}</div>
+                <div className="text-xs text-mist mt-0.5">{p.price_azn} AZN{p.unit_label ? ` · ${p.unit_label}` : ""}</div>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <button type="button" onClick={() => adjustStock.mutate({ id: p.id, delta: -1 })} disabled={p.stock_qty <= 0}
+                    className="size-6 grid place-items-center rounded-full border border-white/15 text-mist hover:border-gold/40 disabled:opacity-30 disabled:hover:border-white/15">
+                    −
+                  </button>
+                  <span className={`text-xs min-w-[5.5rem] text-center ${p.stock_qty <= 0 ? "text-red-300" : p.stock_qty <= 5 ? "text-amber-300" : "text-mist"}`}>
+                    {p.stock_qty <= 0 ? "Stokda yoxdur" : `Anbarda: ${p.stock_qty}`}
+                  </span>
+                  <button type="button" onClick={() => adjustStock.mutate({ id: p.id, delta: 1 })}
+                    className="size-6 grid place-items-center rounded-full border border-white/15 text-mist hover:border-gold/40">
+                    +
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5 shrink-0 items-end">
+                <button type="button" onClick={() => toggleActive.mutate({ id: p.id, is_active: !p.is_active })}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition ${p.is_active ? "border-gold text-goldsoft" : "border-white/15 text-mist"}`}>
+                  {p.is_active ? "Aktiv" : "Aktiv et"}
+                </button>
+                <div className="flex gap-1.5">
+                  <button type="button" onClick={() => setForm({
+                    id: p.id, category: p.category as ShopCategory, slug: p.slug, name: p.name,
+                    name_en: p.name_en ?? "", name_ru: p.name_ru ?? "",
+                    description: p.description, description_en: p.description_en ?? "", description_ru: p.description_ru ?? "",
+                    price_azn: p.price_azn, unit_label: p.unit_label ?? "",
+                    image_url: p.image_url ?? "", sort_order: p.sort_order, stock_qty: p.stock_qty, is_active: p.is_active,
+                  })} className="text-xs px-3 py-1.5 rounded-full border border-white/15 text-mist hover:border-gold/40">
+                    Redaktə
+                  </button>
+                  <button type="button" onClick={() => { if (confirm(`${p.name} silinsin?`)) remove.mutate(p.id); }}
+                    className="text-xs px-3 py-1.5 rounded-full border border-white/15 text-mist hover:border-red-400/50 hover:text-red-400">
+                    Sil
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+        {filtered.length === 0 && <p className="text-mist">Məhsul yoxdur.</p>}
+      </div>
+
+      <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }}
+        className="lg:col-span-5 h-fit rounded-2xl bg-celestial-card/60 border border-white/5 p-6 space-y-3">
+        <h2 className="font-display text-2xl">{form.id ? "Məhsulu redaktə et" : "Yeni məhsul"}</h2>
+        <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as ShopCategory })} className={field}>
+          {SHOP_CATEGORIES.map((c) => <option key={c.key} value={c.key} className="bg-ink">{c.label}</option>)}
+        </select>
+        <input placeholder="Ad (AZ)" value={form.name} maxLength={120}
+          onChange={(e) => setForm({ ...form, name: e.target.value })} className={field} />
+        <input placeholder="Slug (boş buraxsanız avtomatik)" value={form.slug} maxLength={60}
+          onChange={(e) => setForm({ ...form, slug: e.target.value })} className={field} />
+        <textarea placeholder="Təsvir (AZ)" rows={3} value={form.description} maxLength={600}
+          onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${field} resize-none`} />
+        <div className="rounded-xl border border-white/10 p-3 space-y-2.5">
+          <p className="text-[10px] tracking-widest uppercase text-mist">Tərcümələr (opsional — boşsa AZ mətni göstərilir)</p>
+          <input placeholder="Ad (EN)" value={form.name_en} maxLength={120}
+            onChange={(e) => setForm({ ...form, name_en: e.target.value })} className={field} />
+          <textarea placeholder="Təsvir (EN)" rows={2} value={form.description_en} maxLength={600}
+            onChange={(e) => setForm({ ...form, description_en: e.target.value })} className={`${field} resize-none`} />
+          <input placeholder="Ad (RU)" value={form.name_ru} maxLength={120}
+            onChange={(e) => setForm({ ...form, name_ru: e.target.value })} className={field} />
+          <textarea placeholder="Təsvir (RU)" rows={2} value={form.description_ru} maxLength={600}
+            onChange={(e) => setForm({ ...form, description_ru: e.target.value })} className={`${field} resize-none`} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <input type="number" min={0} placeholder="Qiymət (AZN)" value={form.price_azn || ""}
+            onChange={(e) => setForm({ ...form, price_azn: Number(e.target.value) })} className={field} />
+          <input type="number" min={0} placeholder="Sıra" value={form.sort_order}
+            onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} className={field} />
+        </div>
+        <div>
+          <label htmlFor="shop-stock" className="block text-[10px] tracking-widest uppercase text-mist mb-1.5">
+            Anbar sayı
+          </label>
+          <input id="shop-stock" type="number" min={0} placeholder="Stokda neçə ədəd var" value={form.stock_qty}
+            onChange={(e) => setForm({ ...form, stock_qty: Number(e.target.value) })} className={field} />
+        </div>
+        <input placeholder='Ölçü vahidi (məs. "78 kart", "500 qram")' value={form.unit_label} maxLength={60}
+          onChange={(e) => setForm({ ...form, unit_label: e.target.value })} className={field} />
+        <input placeholder="Şəkil linki (opsional, boşsa ikon göstərilir)" value={form.image_url} maxLength={300}
+          onChange={(e) => setForm({ ...form, image_url: e.target.value })} className={field} />
+        <label className="flex items-center gap-2 text-sm text-mist">
+          <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+            className="accent-[color:var(--color-gold,#d9b45b)]" />
+          Aktiv (mağazada görünsün)
+        </label>
+        <div className="flex gap-2">
+          <button type="submit" disabled={save.isPending}
+            className="flex-1 px-5 py-2.5 rounded-full bg-gold text-ink font-semibold text-sm hover:bg-goldsoft transition disabled:opacity-60">
+            {save.isPending ? "Yadda saxlanılır…" : "Yadda saxla"}
+          </button>
+          {form.id && (
+            <button type="button" onClick={() => setForm(EMPTY_SHOP_PRODUCT)} className="px-5 py-2.5 rounded-full border border-white/15 text-mist text-sm">
+              Ləğv et
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+}
+
+const ORDER_STATUS_LABEL: Record<string, string> = {
+  yeni: "Yeni",
+  tesdiqlenib: "Təsdiqlənib",
+  gonderilib: "Göndərilib",
+  legv_edilib: "Ləğv edilib",
+};
+
+function ShopOrdersTab() {
+  const queryClient = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["admin-shop-orders"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("shop_orders")
+        .select("*, shop_order_items(product_id, product_name, quantity, unit_price_azn)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Sifariş "Ləğv edilib" statusuna keçəndə anbar geri qaytarılır (məhsul
+  // yenidən satıla bilsin); ləğvdən geri (başqa statusa) keçəndə isə stok
+  // yenidən tutulur. Bu, stokun sifariş statusu ilə həmişə tutarlı qalmasını
+  // təmin edir.
+  const setStatus = useMutation({
+    mutationFn: async ({ order, status }: { order: NonNullable<typeof data>[number]; status: string }) => {
+      const { error } = await supabase.from("shop_orders").update({ status }).eq("id", order.id);
+      if (error) throw error;
+
+      const wasCancelled = order.status === "legv_edilib";
+      const nowCancelled = status === "legv_edilib";
+      const items = order.shop_order_items ?? [];
+
+      if (nowCancelled && !wasCancelled) {
+        for (const it of items) {
+          if (it.product_id) await supabase.rpc("increment_shop_stock", { _product_id: it.product_id, _qty: it.quantity });
+        }
+      } else if (!nowCancelled && wasCancelled) {
+        for (const it of items) {
+          if (it.product_id) await supabase.rpc("decrement_shop_stock", { _product_id: it.product_id, _qty: it.quantity });
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-shop-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-shop-products"] });
+      queryClient.invalidateQueries({ queryKey: ["shop-products"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-3">
+      {data?.length === 0 && <p className="text-mist">Sifariş yoxdur.</p>}
+      {data?.map((o) => (
+        <Card key={o.id}>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="font-display text-lg">{o.full_name}</div>
+              <div className="text-xs text-mist mt-0.5">{o.phone} · {o.address}</div>
+              {o.note && <div className="text-xs text-mist mt-0.5">Qeyd: {o.note}</div>}
+              <div className="mt-2 space-y-0.5">
+                {(o.shop_order_items ?? []).map((it, i: number) => (
+                  <div key={i} className="text-xs text-mist">
+                    {it.quantity} × {it.product_name} — {it.unit_price_azn * it.quantity} AZN
+                  </div>
+                ))}
+              </div>
+              <div className="text-sm text-goldsoft font-display mt-2">{o.total_azn} AZN</div>
+            </div>
+            <select value={o.status} onChange={(e) => setStatus.mutate({ order: o, status: e.target.value })}
+              className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gold/50 shrink-0">
+              {Object.entries(ORDER_STATUS_LABEL).map(([k, label]) => (
+                <option key={k} value={k} className="bg-ink">{label}</option>
+              ))}
+            </select>
+          </div>
         </Card>
       ))}
     </div>

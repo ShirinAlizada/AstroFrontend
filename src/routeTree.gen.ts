@@ -17,11 +17,14 @@ import { Route as GununBeledcisiRouteImport } from './routes/gunun-beledcisi'
 import { Route as HoroskopRouteImport } from './routes/horoskop'
 import { Route as MetnuRouteImport } from './routes/metnu'
 import { Route as NumerologiyaRouteImport } from './routes/numerologiya'
+import { Route as PaketlerRouteImport } from './routes/paketler'
+import { Route as TarotRouteImport } from './routes/tarot'
 import { Route as UygunluqRouteImport } from './routes/uygunluq'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedJurnalRouteImport } from './routes/_authenticated/jurnal'
 import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated/profil'
 import { Route as AuthenticatedRezervasiyalarRouteImport } from './routes/_authenticated/rezervasiyalar'
+import { Route as AuthenticatedSebetRouteImport } from './routes/_authenticated/sebet'
 import { Route as AuthenticatedXeriteRouteImport } from './routes/_authenticated/xerite'
 import { Route as ApiAiRouteImport } from './routes/api/ai'
 import { Route as ForumIndexRouteImport } from './routes/forum.index'
@@ -70,6 +73,16 @@ const NumerologiyaRoute = NumerologiyaRouteImport.update({
   path: '/numerologiya',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PaketlerRoute = PaketlerRouteImport.update({
+  id: '/paketler',
+  path: '/paketler',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TarotRoute = TarotRouteImport.update({
+  id: '/tarot',
+  path: '/tarot',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UygunluqRoute = UygunluqRouteImport.update({
   id: '/uygunluq',
   path: '/uygunluq',
@@ -96,6 +109,11 @@ const AuthenticatedRezervasiyalarRoute =
     path: '/rezervasiyalar',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSebetRoute = AuthenticatedSebetRouteImport.update({
+  id: '/sebet',
+  path: '/sebet',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedXeriteRoute = AuthenticatedXeriteRouteImport.update({
   id: '/xerite',
   path: '/xerite',
@@ -147,11 +165,14 @@ export interface FileRoutesByFullPath {
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
   '/numerologiya': typeof NumerologiyaRoute
+  '/paketler': typeof PaketlerRoute
+  '/tarot': typeof TarotRoute
   '/uygunluq': typeof UygunluqRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/jurnal': typeof AuthenticatedJurnalRoute
   '/profil': typeof AuthenticatedProfilRoute
   '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
+  '/sebet': typeof AuthenticatedSebetRoute
   '/xerite': typeof AuthenticatedXeriteRoute
   '/api/ai': typeof ApiAiRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
@@ -169,11 +190,14 @@ export interface FileRoutesByTo {
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
   '/numerologiya': typeof NumerologiyaRoute
+  '/paketler': typeof PaketlerRoute
+  '/tarot': typeof TarotRoute
   '/uygunluq': typeof UygunluqRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/jurnal': typeof AuthenticatedJurnalRoute
   '/profil': typeof AuthenticatedProfilRoute
   '/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
+  '/sebet': typeof AuthenticatedSebetRoute
   '/xerite': typeof AuthenticatedXeriteRoute
   '/api/ai': typeof ApiAiRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
@@ -193,11 +217,14 @@ export interface FileRoutesById {
   '/horoskop': typeof HoroskopRoute
   '/metnu': typeof MetnuRoute
   '/numerologiya': typeof NumerologiyaRoute
+  '/paketler': typeof PaketlerRoute
+  '/tarot': typeof TarotRoute
   '/uygunluq': typeof UygunluqRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/jurnal': typeof AuthenticatedJurnalRoute
   '/_authenticated/profil': typeof AuthenticatedProfilRoute
   '/_authenticated/rezervasiyalar': typeof AuthenticatedRezervasiyalarRoute
+  '/_authenticated/sebet': typeof AuthenticatedSebetRoute
   '/_authenticated/xerite': typeof AuthenticatedXeriteRoute
   '/api/ai': typeof ApiAiRoute
   '/forum/$topicId': typeof ForumTopicIdRoute
@@ -217,11 +244,14 @@ export interface FileRouteTypes {
     | '/horoskop'
     | '/metnu'
     | '/numerologiya'
+    | '/paketler'
+    | '/tarot'
     | '/uygunluq'
     | '/admin'
     | '/jurnal'
     | '/profil'
     | '/rezervasiyalar'
+    | '/sebet'
     | '/xerite'
     | '/api/ai'
     | '/forum/$topicId'
@@ -239,11 +269,14 @@ export interface FileRouteTypes {
     | '/horoskop'
     | '/metnu'
     | '/numerologiya'
+    | '/paketler'
+    | '/tarot'
     | '/uygunluq'
     | '/admin'
     | '/jurnal'
     | '/profil'
     | '/rezervasiyalar'
+    | '/sebet'
     | '/xerite'
     | '/api/ai'
     | '/forum/$topicId'
@@ -262,11 +295,14 @@ export interface FileRouteTypes {
     | '/horoskop'
     | '/metnu'
     | '/numerologiya'
+    | '/paketler'
+    | '/tarot'
     | '/uygunluq'
     | '/_authenticated/admin'
     | '/_authenticated/jurnal'
     | '/_authenticated/profil'
     | '/_authenticated/rezervasiyalar'
+    | '/_authenticated/sebet'
     | '/_authenticated/xerite'
     | '/api/ai'
     | '/forum/$topicId'
@@ -286,6 +322,8 @@ export interface RootRouteChildren {
   HoroskopRoute: typeof HoroskopRoute
   MetnuRoute: typeof MetnuRoute
   NumerologiyaRoute: typeof NumerologiyaRoute
+  PaketlerRoute: typeof PaketlerRoute
+  TarotRoute: typeof TarotRoute
   UygunluqRoute: typeof UygunluqRoute
   ApiAiRoute: typeof ApiAiRoute
   ForumTopicIdRoute: typeof ForumTopicIdRoute
@@ -352,6 +390,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NumerologiyaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/paketler': {
+      id: '/paketler'
+      path: '/paketler'
+      fullPath: '/paketler'
+      preLoaderRoute: typeof PaketlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tarot': {
+      id: '/tarot'
+      path: '/tarot'
+      fullPath: '/tarot'
+      preLoaderRoute: typeof TarotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/uygunluq': {
       id: '/uygunluq'
       path: '/uygunluq'
@@ -385,6 +437,13 @@ declare module '@tanstack/react-router' {
       path: '/rezervasiyalar'
       fullPath: '/rezervasiyalar'
       preLoaderRoute: typeof AuthenticatedRezervasiyalarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/sebet': {
+      id: '/_authenticated/sebet'
+      path: '/sebet'
+      fullPath: '/sebet'
+      preLoaderRoute: typeof AuthenticatedSebetRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/xerite': {
@@ -451,6 +510,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedJurnalRoute: typeof AuthenticatedJurnalRoute
   AuthenticatedProfilRoute: typeof AuthenticatedProfilRoute
   AuthenticatedRezervasiyalarRoute: typeof AuthenticatedRezervasiyalarRoute
+  AuthenticatedSebetRoute: typeof AuthenticatedSebetRoute
   AuthenticatedXeriteRoute: typeof AuthenticatedXeriteRoute
   AuthenticatedSohbetThreadIdRoute: typeof AuthenticatedSohbetThreadIdRoute
   AuthenticatedSohbetIndexRoute: typeof AuthenticatedSohbetIndexRoute
@@ -461,6 +521,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedJurnalRoute: AuthenticatedJurnalRoute,
   AuthenticatedProfilRoute: AuthenticatedProfilRoute,
   AuthenticatedRezervasiyalarRoute: AuthenticatedRezervasiyalarRoute,
+  AuthenticatedSebetRoute: AuthenticatedSebetRoute,
   AuthenticatedXeriteRoute: AuthenticatedXeriteRoute,
   AuthenticatedSohbetThreadIdRoute: AuthenticatedSohbetThreadIdRoute,
   AuthenticatedSohbetIndexRoute: AuthenticatedSohbetIndexRoute,
@@ -478,6 +539,8 @@ const rootRouteChildren: RootRouteChildren = {
   HoroskopRoute: HoroskopRoute,
   MetnuRoute: MetnuRoute,
   NumerologiyaRoute: NumerologiyaRoute,
+  PaketlerRoute: PaketlerRoute,
+  TarotRoute: TarotRoute,
   UygunluqRoute: UygunluqRoute,
   ApiAiRoute: ApiAiRoute,
   ForumTopicIdRoute: ForumTopicIdRoute,

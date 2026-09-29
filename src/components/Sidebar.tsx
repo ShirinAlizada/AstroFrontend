@@ -9,6 +9,8 @@ const NAV_LINKS = [
   { to: "/astroloq", key: "nav.astroloqlar" },
   { to: "/forum", key: "nav.forum" },
   { to: "/qezet", key: "nav.meqale" },
+  { to: "/paketler", key: "nav.paketler" },
+  { to: "/tarot", key: "nav.magaza" },
 ] as const;
 
 const linkClass = "rounded-xl px-3.5 py-2.5 text-sm text-mist hover:text-white hover:bg-white/5 transition";

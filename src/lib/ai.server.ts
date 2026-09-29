@@ -5,7 +5,7 @@ type GatewayMessage = { role: "user" | "assistant"; content: string };
 // something you can see and copy yourself, unlike LOVABLE_API_KEY which
 // only exists inside Lovable Cloud's own runtime and can never be viewed.
 // Overridable via the AI_MODEL env var without touching this file.
-const DEFAULT_MODEL = "gemini-3.8-flash";
+const DEFAULT_MODEL = "gemini-3.6-flash";
 
 const RETRYABLE_STATUS = new Set([429, 503]);
 const RETRY_DELAYS_MS = [500, 1500]; // per-model retry backoff
@@ -33,7 +33,11 @@ async function listUsableModels(apiKey: string): Promise<string[]> {
   }
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-    if (!res.ok) return [];
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error(`[AI] listUsableModels failed: ${res.status} ${text.slice(0, 500)}`);
+      return [];
+    }
     const json = (await res.json()) as {
       models?: { name?: string; supportedGenerationMethods?: string[] }[];
     };

@@ -383,6 +383,47 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_transactions: {
+        Row: {
+          amount_azn: number
+          created_at: string
+          id: string
+          note: string | null
+          plan_key: string
+          provider: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount_azn: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          plan_key: string
+          provider?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount_azn?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          plan_key?: string
+          provider?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_plan_key_fkey"
+            columns: ["plan_key"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           ascendant: string | null
@@ -437,6 +478,257 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          product_id: string | null
+          product_name: string
+          quantity: number
+          unit_price_azn: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          product_id?: string | null
+          product_name: string
+          quantity: number
+          unit_price_azn: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          unit_price_azn?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "shop_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shop_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_orders: {
+        Row: {
+          address: string
+          created_at: string
+          full_name: string
+          id: string
+          note: string | null
+          phone: string
+          status: string
+          total_azn: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          full_name: string
+          id?: string
+          note?: string | null
+          phone: string
+          status?: string
+          total_azn: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          note?: string | null
+          phone?: string
+          status?: string
+          total_azn?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      shop_products: {
+        Row: {
+          card_count: number | null
+          category: string
+          created_at: string
+          description: string
+          description_en: string | null
+          description_ru: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          name_en: string | null
+          name_ru: string | null
+          price_azn: number
+          slug: string
+          sort_order: number
+          stock_qty: number
+          unit_label: string | null
+          updated_at: string
+        }
+        Insert: {
+          card_count?: number | null
+          category: string
+          created_at?: string
+          description: string
+          description_en?: string | null
+          description_ru?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          name_en?: string | null
+          name_ru?: string | null
+          price_azn: number
+          slug: string
+          sort_order?: number
+          stock_qty?: number
+          unit_label?: string | null
+          updated_at?: string
+        }
+        Update: {
+          card_count?: number | null
+          category?: string
+          created_at?: string
+          description?: string
+          description_en?: string | null
+          description_ru?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          name_en?: string | null
+          name_ru?: string | null
+          price_azn?: number
+          slug?: string
+          sort_order?: number
+          stock_qty?: number
+          unit_label?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          ai_messages_per_day: number | null
+          billing_period: string
+          booking_discount_pct: number
+          created_at: string
+          features: string[]
+          id: string
+          is_active: boolean
+          key: string
+          name: string
+          price_azn: number
+          sort_order: number
+          synastry_full_detail: boolean
+          tagline: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_messages_per_day?: number | null
+          billing_period?: string
+          booking_discount_pct?: number
+          created_at?: string
+          features?: string[]
+          id?: string
+          is_active?: boolean
+          key: string
+          name: string
+          price_azn: number
+          sort_order?: number
+          synastry_full_detail?: boolean
+          tagline?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_messages_per_day?: number | null
+          billing_period?: string
+          booking_discount_pct?: number
+          created_at?: string
+          features?: string[]
+          id?: string
+          is_active?: boolean
+          key?: string
+          name?: string
+          price_azn?: number
+          sort_order?: number
+          synastry_full_detail?: boolean
+          tagline?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tarot_orders: {
+        Row: {
+          address: string
+          created_at: string
+          full_name: string
+          id: string
+          note: string | null
+          phone: string
+          product_id: string
+          quantity: number
+          status: string
+          total_azn: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          full_name: string
+          id?: string
+          note?: string | null
+          phone: string
+          product_id: string
+          quantity?: number
+          status?: string
+          total_azn: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          note?: string | null
+          phone?: string
+          product_id?: string
+          quantity?: number
+          status?: string
+          total_azn?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarot_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shop_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -457,6 +749,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string
+          id: string
+          plan_key: string
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end: string
+          id?: string
+          plan_key: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string
+          id?: string
+          plan_key?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_key_fkey"
+            columns: ["plan_key"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["key"]
+          },
+        ]
       }
     }
     Views: {

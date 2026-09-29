@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Page, PageHeader } from "@/components/Page";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -16,6 +17,7 @@ import {
   type PlanetPairDetail,
 } from "@/lib/astrology";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffectivePlan } from "@/hooks/useSubscription";
 
 export const Route = createFileRoute("/uygunluq")({
   head: () => ({
@@ -48,6 +50,7 @@ function chartFrom(p: PersonForm): NatalChart | null {
 function SynastryPage() {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { plan } = useEffectivePlan();
   const [a, setA] = useState<PersonForm>({ ...empty, name: "Mən" });
   const [b, setB] = useState<PersonForm>({ ...empty, name: "Partnyor" });
   const [result, setResult] = useState<(SynastryResult & { ca: NatalChart; cb: NatalChart; details: PlanetPairDetail[] }) | null>(null);
@@ -153,33 +156,47 @@ function SynastryPage() {
       {result && (
         <section className="mt-8">
           <h2 className="font-display text-2xl mb-4">{t("uygunluq.analysis_heading")}</h2>
-          <div className="grid gap-4">
-            {result.details.map((d) => (
-              <div
-                key={d.planet}
-                className="rounded-2xl bg-celestial-card/60 border border-white/5 p-5 flex flex-col sm:flex-row sm:items-center gap-4"
-              >
-                <div className="flex items-center gap-3 sm:w-48 shrink-0">
-                  <span className="text-2xl text-gold">{d.symbol}</span>
-                  <div>
-                    <div className="text-sm font-medium">{d.planet}</div>
-                    <div className="text-xs text-mist">{planetMeaningAz(d.planet)}</div>
+          {plan.synastryFullDetail ? (
+            <div className="grid gap-4">
+              {result.details.map((d) => (
+                <div
+                  key={d.planet}
+                  className="rounded-2xl bg-celestial-card/60 border border-white/5 p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+                >
+                  <div className="flex items-center gap-3 sm:w-48 shrink-0">
+                    <span className="text-2xl text-gold">{d.symbol}</span>
+                    <div>
+                      <div className="text-sm font-medium">{d.planet}</div>
+                      <div className="text-xs text-mist">{planetMeaningAz(d.planet)}</div>
+                    </div>
+                  </div>
+                  <div className="flex-1 flex items-center gap-3 text-sm">
+                    <span className="text-goldsoft">{d.signA}</span>
+                    <span className="text-mist text-xs">({d.elementA})</span>
+                    <span className="text-white/30">↔</span>
+                    <span className="text-violet">{d.signB}</span>
+                    <span className="text-mist text-xs">({d.elementB})</span>
+                  </div>
+                  <div className="flex items-center gap-3 sm:w-40 justify-end">
+                    <span className="text-xs text-mist px-2.5 py-1 rounded-full border border-white/10">{d.aspect}</span>
+                    <span className="font-display text-xl text-gold">{d.score}%</span>
                   </div>
                 </div>
-                <div className="flex-1 flex items-center gap-3 text-sm">
-                  <span className="text-goldsoft">{d.signA}</span>
-                  <span className="text-mist text-xs">({d.elementA})</span>
-                  <span className="text-white/30">↔</span>
-                  <span className="text-violet">{d.signB}</span>
-                  <span className="text-mist text-xs">({d.elementB})</span>
-                </div>
-                <div className="flex items-center gap-3 sm:w-40 justify-end">
-                  <span className="text-xs text-mist px-2.5 py-1 rounded-full border border-white/10">{d.aspect}</span>
-                  <span className="font-display text-xl text-gold">{d.score}%</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-celestial-card/60 border border-white/5 p-8 text-center">
+              <Lock className="size-6 text-gold mx-auto" />
+              <h3 className="font-display text-xl mt-3">{t("uygunluq.detay_kilidli_title")}</h3>
+              <p className="text-sm text-mist mt-2 max-w-md mx-auto">{t("uygunluq.detay_kilidli_desc")}</p>
+              <Link
+                to="/paketler"
+                className="inline-block mt-5 px-6 py-2.5 rounded-full bg-gold text-ink font-semibold text-sm hover:bg-goldsoft transition"
+              >
+                {t("uygunluq.detay_kilidli_button")}
+              </Link>
+            </div>
+          )}
         </section>
       )}
     </Page>

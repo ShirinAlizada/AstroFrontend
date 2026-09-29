@@ -1,11 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { BookOpen, Check, Flame, Gem, ShoppingCart, Sparkles, Wand2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { SiteNav } from "@/components/SiteNav";
 import { Sidebar } from "@/components/Sidebar";
 import { CurrentPlanetsPanel } from "@/components/CurrentPlanetsPanel";
 import { SIGN_SYMBOLS, DAY_RULERS_AZ, sunSignFromDate } from "@/lib/astrology";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useAuth, useIsAdmin } from "@/hooks/useAuth";
+import { useEffectivePlan, usePlans } from "@/hooks/useSubscription";
+import { FREE_PLAN, type SubscriptionPlan } from "@/lib/subscription";
+import { useShopProducts } from "@/hooks/useShop";
+import { useCart } from "@/hooks/useCart";
+import { localizedName, type ShopCategory } from "@/lib/shop";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -121,6 +129,62 @@ function Index() {
             </div>
           </div>
 
+          {/* SUBSCRIPTION PREVIEW */}
+          <div className="py-10">
+            <div className="flex items-end justify-between gap-4 mb-5">
+              <div>
+                <p className="text-gold text-xs tracking-[0.35em] uppercase mb-2">
+                  {t("home.sub_kicker")}
+                </p>
+                <h2 className="font-display text-3xl">{t("home.sub_title")}</h2>
+                <p className="text-mist text-sm mt-2 max-w-xl">{t("home.sub_desc")}</p>
+              </div>
+              <Link
+                to="/paketler"
+                className="hidden sm:inline-block shrink-0 text-sm px-5 py-2.5 rounded-full border border-gold/40 text-goldsoft hover:bg-gold/10 transition"
+              >
+                {t("home.sub_button")}
+              </Link>
+            </div>
+
+            <SubscriptionPreviewCards />
+
+            <Link
+              to="/paketler"
+              className="sm:hidden mt-5 block text-center text-sm px-5 py-3 rounded-full border border-gold/40 text-goldsoft hover:bg-gold/10 transition"
+            >
+              {t("home.sub_button")}
+            </Link>
+          </div>
+
+          {/* SHOP PREVIEW */}
+          <div className="py-10">
+            <div className="flex items-end justify-between gap-4 mb-5">
+              <div>
+                <p className="text-gold text-xs tracking-[0.35em] uppercase mb-2">
+                  {t("home.shop_kicker")}
+                </p>
+                <h2 className="font-display text-3xl">{t("home.shop_title")}</h2>
+                <p className="text-mist text-sm mt-2 max-w-xl">{t("home.shop_desc")}</p>
+              </div>
+              <Link
+                to="/tarot"
+                className="hidden sm:inline-block shrink-0 text-sm px-5 py-2.5 rounded-full border border-gold/40 text-goldsoft hover:bg-gold/10 transition"
+              >
+                {t("home.shop_button")}
+              </Link>
+            </div>
+
+            <ShopPreviewGrid />
+
+            <Link
+              to="/tarot"
+              className="sm:hidden mt-5 block text-center text-sm px-5 py-3 rounded-full border border-gold/40 text-goldsoft hover:bg-gold/10 transition"
+            >
+              {t("home.shop_button")}
+            </Link>
+          </div>
+
           {/* CTA */}
           <div className="py-16">
             <div className="rounded-3xl border border-gold/20 bg-gradient-to-br from-celestial-card/70 to-ink2 p-8 md:p-10 text-center">
@@ -138,6 +202,187 @@ function Index() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Ana səhifədəki abunəlik önizləməsi — Pulsuz + bütün aktiv paketləri kiçik
+ * kartlarda göstərir (hər paketin ilk 3 üstünlüyü ilə). Kartın özü /paketler-ə
+ * keçid edir; faktiki abunə olma axını (checkout modalı) yalnız həmin
+ * səhifədədir — burada sadəcə seçim üçün ilkin baxış verilir.
+ */
+function SubscriptionPreviewCards() {
+  const { t } = useLanguage();
+  const plansQ = usePlans();
+  const { plan: effectivePlan } = useEffectivePlan();
+
+  if (plansQ.isLoading) {
+    return (
+      <div className="grid sm:grid-cols-3 gap-4">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="h-52 rounded-2xl border border-white/5 bg-celestial-card/40 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  const cards: SubscriptionPlan[] = [FREE_PLAN, ...(plansQ.data ?? [])];
+
+  return (
+    <div className="grid sm:grid-cols-3 gap-4">
+      {cards.map((plan) => {
+        const isPremium = plan.key === "premium";
+        const isFree = plan.key === "pulsuz";
+        const isCurrent = plan.key === effectivePlan.key;
+        const features = isFree ? [t("paket.pulsuz_f1")] : plan.features.slice(0, 3);
+        const extraCount = isFree ? 0 : Math.max(0, plan.features.length - 3);
+
+        return (
+          <Link
+            key={plan.key}
+            to="/paketler"
+            className={`relative rounded-2xl border p-5 flex flex-col transition hover:border-gold/40 ${
+              isPremium
+                ? "border-gold/40 bg-gradient-to-b from-gold/10 to-celestial-card/60"
+                : "border-white/8 bg-celestial-card/50"
+            }`}
+          >
+            {isPremium && (
+              <span className="absolute -top-3 left-5 flex items-center gap-1 rounded-full bg-gold text-ink text-[10px] font-semibold px-2.5 py-1">
+                <Sparkles className="size-3" /> {t("paket.en_populyar")}
+              </span>
+            )}
+
+            <h3 className="font-display text-lg">{plan.name}</h3>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="font-display text-2xl text-gold">{plan.priceAzn}</span>
+              <span className="text-mist text-xs">
+                {" "}
+                AZN {plan.billingPeriod === "monthly" ? t("paket.ayliq") : t("paket.illik")}
+              </span>
+            </div>
+
+            <ul className="mt-3 space-y-1.5 flex-1">
+              {features.map((f) => (
+                <li key={f} className="flex items-start gap-1.5 text-xs text-white/80">
+                  <Check className={`size-3.5 shrink-0 mt-0.5 ${isFree ? "text-mist" : "text-gold"}`} />
+                  <span>{f}</span>
+                </li>
+              ))}
+              {extraCount > 0 && (
+                <li className="text-xs text-mist pl-5">
+                  {t("home.sub_more_features").replace("{n}", String(extraCount))}
+                </li>
+              )}
+            </ul>
+
+            {isCurrent && (
+              <span className="mt-3 inline-block text-center text-[11px] font-semibold text-goldsoft py-1.5 rounded-full border border-gold/40 bg-gold/10">
+                {t("paket.cari_paketiniz")}
+              </span>
+            )}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+const SHOP_PREVIEW_ICON: Record<ShopCategory, LucideIcon> = {
+  tarot: Wand2,
+  kristal: Gem,
+  sham: Flame,
+  kitab: BookOpen,
+};
+
+const SHOP_PREVIEW_GRADIENT: Record<ShopCategory, string> = {
+  tarot: "from-indigo-500/30 via-transparent to-fuchsia-500/20",
+  kristal: "from-cyan-400/25 via-transparent to-violet-500/20",
+  sham: "from-amber-500/25 via-transparent to-orange-600/15",
+  kitab: "from-emerald-500/20 via-transparent to-teal-600/15",
+};
+
+/**
+ * Ana səhifədəki mağaza önizləməsi — kataloqdan ilk 4 aktiv məhsulu göstərir,
+ * "Səbətə at" düyməsi tam işlək (useCart), beləliklə istifadəçi /tarot-a
+ * getmədən birbaşa buradan da səbətə əlavə edə bilir.
+ */
+function ShopPreviewGrid() {
+  const { t, lang } = useLanguage();
+  const productsQ = useShopProducts();
+  const { addToCart } = useCart();
+
+  if (productsQ.isLoading) {
+    return (
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="h-60 rounded-2xl border border-white/5 bg-celestial-card/40 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  const products = (productsQ.data ?? []).slice(0, 4);
+  if (products.length === 0) {
+    return <p className="text-mist text-sm">{t("magaza.empty_category")}</p>;
+  }
+
+  return (
+    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {products.map((product) => {
+        const name = localizedName(product, lang);
+        const Icon = SHOP_PREVIEW_ICON[product.category];
+        const outOfStock = product.stockQty <= 0;
+
+        return (
+          <div key={product.id} className="rounded-2xl border border-white/8 bg-celestial-card/50 p-3.5 flex flex-col">
+            <div className="relative">
+              {product.imageUrl ? (
+                <div className="relative aspect-square rounded-xl overflow-hidden bg-ink2">
+                  <img src={product.imageUrl} alt={name} loading="lazy" className="absolute inset-0 size-full object-cover" />
+                </div>
+              ) : (
+                <div
+                  className={`relative aspect-square rounded-xl overflow-hidden bg-ink2 bg-gradient-to-br ${SHOP_PREVIEW_GRADIENT[product.category]} grid place-items-center`}
+                >
+                  <Icon className="size-8 text-goldsoft/70" />
+                </div>
+              )}
+              {outOfStock && (
+                <span className="absolute top-1.5 right-1.5 text-[9px] px-2 py-0.5 rounded-full bg-ink/90 border border-red-400/40 text-red-300 uppercase tracking-wide">
+                  {t("magaza.out_of_stock")}
+                </span>
+              )}
+            </div>
+
+            <h3 className="font-display text-sm mt-3 leading-snug">{name}</h3>
+
+            <div className="mt-2 flex items-center justify-between">
+              <span className="font-display text-base text-gold">{product.priceAzn} AZN</span>
+              <button
+                type="button"
+                aria-label={outOfStock ? t("magaza.out_of_stock") : t("magaza.add_to_cart")}
+                disabled={outOfStock}
+                onClick={() => {
+                  addToCart({
+                    id: product.id,
+                    name: product.name,
+                    nameEn: product.nameEn,
+                    nameRu: product.nameRu,
+                    priceAzn: product.priceAzn,
+                    imageUrl: product.imageUrl,
+                  });
+                  toast.success(t("magaza.added_to_cart"));
+                }}
+                className="size-8 grid place-items-center rounded-full bg-gold text-ink hover:bg-goldsoft transition disabled:opacity-40 disabled:hover:bg-gold disabled:cursor-not-allowed"
+              >
+                <ShoppingCart className="size-4" />
+              </button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

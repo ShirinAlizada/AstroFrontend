@@ -1,12 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Page, PageHeader } from "@/components/Page";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { CITIES, computeNatalChart, SIGN_SYMBOLS } from "@/lib/astrology";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffectivePlan } from "@/hooks/useSubscription";
+import { cancelSubscription } from "@/lib/subscription";
+import { formatLongDate } from "@/lib/date-format";
 
 export const Route = createFileRoute("/_authenticated/profil")({
   head: () => ({
@@ -171,24 +175,103 @@ function ProfilePage() {
           </button>
         </form>
 
-        <aside className="rounded-2xl bg-celestial-card/60 border border-white/5 p-6">
-          <p className="text-gold text-xs tracking-[0.3em] uppercase mb-4">{t("profil.celestial_signature")}</p>
-          <div className="space-y-3 text-sm">
-            <Row label={t("common.gunes")} value={profile?.sun_sign} />
-            <Row label={t("common.ay")} value={profile?.moon_sign} />
-            <Row label={t("common.yukselen")} value={profile?.ascendant} />
-          </div>
-          <div className="mt-6 grid gap-2">
-            <Link to="/xerite" className="text-center text-sm px-4 py-2.5 rounded-full border border-gold/40 text-goldsoft hover:bg-gold/10 transition">
-              {t("profil.my_chart_link")}
-            </Link>
-            <Link to="/rezervasiyalar" className="text-center text-sm px-4 py-2.5 rounded-full border border-white/10 text-mist hover:text-white transition">
-              {t("profil.my_bookings_link")}
-            </Link>
-          </div>
-        </aside>
+        <div className="space-y-6">
+          <aside className="rounded-2xl bg-celestial-card/60 border border-white/5 p-6">
+            <p className="text-gold text-xs tracking-[0.3em] uppercase mb-4">{t("profil.celestial_signature")}</p>
+            <div className="space-y-3 text-sm">
+              <Row label={t("common.gunes")} value={profile?.sun_sign} />
+              <Row label={t("common.ay")} value={profile?.moon_sign} />
+              <Row label={t("common.yukselen")} value={profile?.ascendant} />
+            </div>
+            <div className="mt-6 grid gap-2">
+              <Link to="/xerite" className="text-center text-sm px-4 py-2.5 rounded-full border border-gold/40 text-goldsoft hover:bg-gold/10 transition">
+                {t("profil.my_chart_link")}
+              </Link>
+              <Link to="/rezervasiyalar" className="text-center text-sm px-4 py-2.5 rounded-full border border-white/10 text-mist hover:text-white transition">
+                {t("profil.my_bookings_link")}
+              </Link>
+            </div>
+          </aside>
+
+          <SubscriptionCard />
+        </div>
       </div>
     </Page>
+  );
+}
+
+function SubscriptionCard() {
+  const { t, lang } = useLanguage();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { plan, subscription, isLoading } = useEffectivePlan();
+
+  const cancel = useMutation({
+    mutationFn: async () => {
+      if (!user) return;
+      await cancelSubscription(user.id);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["my-subscription", user?.id] });
+      toast.success(t("profil.abunelik_legv_edildi"));
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const isPaid = plan.key !== "pulsuz";
+  const isCancelled = subscription?.status === "cancelled";
+
+  return (
+    <aside className="rounded-2xl bg-celestial-card/60 border border-white/5 p-6">
+      <p className="text-gold text-xs tracking-[0.3em] uppercase mb-4">{t("profil.abunelik_heading")}</p>
+
+      {isLoading ? (
+        <p className="text-sm text-mist">{t("common.yuklenir")}</p>
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <span className="font-display text-xl">{plan.name}</span>
+            {isPaid && !isCancelled && (
+              <span className="text-[11px] px-2.5 py-1 rounded-full border border-gold/40 text-goldsoft">
+                {t("profil.abunelik_status_active")}
+              </span>
+            )}
+            {isCancelled && (
+              <span className="text-[11px] px-2.5 py-1 rounded-full border border-white/10 text-mist">
+                {t("profil.abunelik_status_cancelled")}
+              </span>
+            )}
+          </div>
+
+          {isPaid && subscription && (
+            <p className="mt-2 text-xs text-mist">
+              {t("profil.abunelik_bitme_tarixi")}: {formatLongDate(new Date(subscription.currentPeriodEnd), lang)}
+            </p>
+          )}
+
+          {!isPaid && <p className="mt-2 text-sm text-mist">{t("profil.abunelik_yoxdur")}</p>}
+
+          <div className="mt-5 grid gap-2">
+            <Link
+              to="/paketler"
+              className="text-center text-sm px-4 py-2.5 rounded-full border border-gold/40 text-goldsoft hover:bg-gold/10 transition"
+            >
+              {isPaid ? t("profil.abunelik_yukselt") : t("profil.abunelik_gor_paketler")}
+            </Link>
+            {isPaid && !isCancelled && (
+              <button
+                type="button"
+                onClick={() => cancel.mutate()}
+                disabled={cancel.isPending}
+                className="text-center text-sm px-4 py-2.5 rounded-full border border-white/10 text-mist hover:text-red-300 hover:border-red-300/40 transition disabled:opacity-50"
+              >
+                {t("profil.abunelik_legv_et")}
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </aside>
   );
 }
 

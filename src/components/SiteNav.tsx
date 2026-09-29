@@ -1,9 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Menu, X, Search } from "lucide-react";
+import { Menu, X, Search, ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, useIsAdmin } from "@/hooks/useAuth";
+import { useCart } from "@/hooks/useCart";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Sidebar } from "@/components/Sidebar";
@@ -120,6 +121,7 @@ function SearchBox() {
 export function SiteNav() {
   const { user } = useAuth();
   const isAdmin = useIsAdmin(user?.id);
+  const { totalCount } = useCart();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useLanguage();
@@ -157,6 +159,18 @@ export function SiteNav() {
 
         <div className="flex items-center gap-1.5">
           <SearchBox />
+          <Link
+            to="/sebet"
+            aria-label={t("sebet.nav_aria")}
+            className="relative p-2 text-mist hover:text-white transition"
+          >
+            <ShoppingCart className="size-4.5" />
+            {totalCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 grid place-items-center rounded-full bg-gold text-ink text-[10px] font-semibold leading-none">
+                {totalCount > 9 ? "9+" : totalCount}
+              </span>
+            )}
+          </Link>
           <LanguageSwitcher />
           <span className="hidden sm:block h-4 w-px bg-white/10 mx-0.5" />
           {user ? (
