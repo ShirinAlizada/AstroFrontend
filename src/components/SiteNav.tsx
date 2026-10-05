@@ -1,13 +1,16 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Menu, X, Search, ShoppingCart } from "lucide-react";
+import { Menu, X, Search, ShoppingCart, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, useIsAdmin } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
+import { useWishlist } from "@/hooks/useWishlist";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Sidebar } from "@/components/Sidebar";
+import { NotificationBell } from "@/components/NotificationBell";
+import { useMenu } from "@/hooks/useMenu";
 
 type SearchHit = {
   to: "/qezet/$slug" | "/astroloq";
@@ -114,18 +117,22 @@ function SearchBox() {
 
 /**
  * Yığcam yuxarı zolaq: loqo, axtarış, dil düyməsi və giriş/çıxış.
- * Bütün bölmə keçidləri Sidebar-a köçürülüb — masaüstündə Page.tsx-in sol
- * panelində sabit görünür, burada isə (bütün ekranlarda) menyu düyməsi eyni
- * Sidebar-ı çəkmə (drawer) şəklində açır.
+ * Bütün bölmə keçidləri Sidebar-a köçürülüb — sabit sol panel yoxdur, bütün
+ * ekranlarda (masaüstü daxil) yeganə giriş nöqtəsi bu komponentdəki menyu
+ * düyməsidir, o da Sidebar-ı çəkmə (drawer) şəklində açır.
  */
 export function SiteNav() {
   const { user } = useAuth();
   const isAdmin = useIsAdmin(user?.id);
   const { totalCount } = useCart();
+  const { count: wishlistCount } = useWishlist();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useLanguage();
-  const [open, setOpen] = useState(false);
+  // Menyunun açıq/bağlı vəziyyəti indi qlobal bir mağazadadır (bax: menu-store.ts) —
+  // beləcə Page.tsx / index.tsx / metnu.tsx kimi hər tərtibat öz əsas məzmununu
+  // (heç bir prop ötürmədən) eyni vəziyyətə görə sola sürüşdürüb gizlədə bilir.
+  const { open, visible: menuVisible, openMenu, closeMenu } = useMenu();
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -141,7 +148,7 @@ export function SiteNav() {
           <button
             type="button"
             aria-label={t("common.menyu")}
-            onClick={() => setOpen(true)}
+            onClick={openMenu}
             className="p-2 -ml-2 text-mist hover:text-white transition"
           >
             <Menu className="size-5" />
@@ -160,6 +167,18 @@ export function SiteNav() {
         <div className="flex items-center gap-1.5">
           <SearchBox />
           <Link
+            to="/sevimlilerim"
+            aria-label={t("nav.sevimlilerim_aria")}
+            className="relative p-2 text-mist hover:text-white transition"
+          >
+            <Heart className="size-4.5" />
+            {wishlistCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 grid place-items-center rounded-full bg-gold text-ink text-[10px] font-semibold leading-none">
+                {wishlistCount > 9 ? "9+" : wishlistCount}
+              </span>
+            )}
+          </Link>
+          <Link
             to="/sebet"
             aria-label={t("sebet.nav_aria")}
             className="relative p-2 text-mist hover:text-white transition"
@@ -171,6 +190,7 @@ export function SiteNav() {
               </span>
             )}
           </Link>
+          {user && <NotificationBell />}
           <LanguageSwitcher />
           <span className="hidden sm:block h-4 w-px bg-white/10 mx-0.5" />
           {user ? (
@@ -194,28 +214,34 @@ export function SiteNav() {
 
       {open && (
         <div className="fixed inset-0 z-50 flex">
-          <div className="w-72 h-full bg-ink2 border-r border-white/10 p-5 flex flex-col gap-1 overflow-y-auto">
+          <div
+            className={`w-72 h-full bg-ink2 border-r border-white/10 p-5 flex flex-col gap-1 overflow-y-auto transition-all duration-200 ease-out ${
+              menuVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
+            }`}
+          >
             <div className="flex items-center justify-between mb-3">
-              <Link to="/" onClick={() => setOpen(false)} className="flex items-center gap-1.5">
+              <Link to="/" onClick={closeMenu} className="flex items-center gap-1.5">
                 <span className="size-6 grid place-items-center rounded-full border border-gold/40 text-gold text-[11px]">
                   ☾
                 </span>
                 <span className="font-display text-lg">Virgo Astrology</span>
               </Link>
-              <button type="button" aria-label={t("nav.baglat")} onClick={() => setOpen(false)} className="text-mist p-1">
+              <button type="button" aria-label={t("nav.baglat")} onClick={closeMenu} className="text-mist p-1">
                 <X className="size-5" />
               </button>
             </div>
             <div className="mb-3">
               <LanguageSwitcher variant="full" />
             </div>
-            <Sidebar isAdmin={isAdmin} hasUser={Boolean(user)} onNavigate={() => setOpen(false)} />
+            <Sidebar isAdmin={isAdmin} hasUser={Boolean(user)} onNavigate={closeMenu} />
           </div>
           <button
             type="button"
             aria-label={t("nav.baglat")}
-            className="flex-1 bg-black/40 backdrop-blur-sm"
-            onClick={() => setOpen(false)}
+            className={`flex-1 bg-black/40 backdrop-blur-sm transition-opacity duration-200 ease-out ${
+              menuVisible ? "opacity-100" : "opacity-0"
+            }`}
+            onClick={closeMenu}
           />
         </div>
       )}

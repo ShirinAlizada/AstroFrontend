@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { computeCurrentSky, BODY_SYMBOLS, SIGN_SYMBOLS, formatDegree, type NatalChart } from "@/lib/astrology";
+import { computeCurrentSky, BODY_SYMBOLS, SIGN_SYMBOLS, formatDegree, localizedBodyName, localizedSignName, type NatalChart } from "@/lib/astrology";
 import { NatalWheel } from "@/components/NatalWheel";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { formatLongDate } from "@/lib/date-format";
@@ -58,10 +58,10 @@ export function CurrentPlanetsPanel() {
         {chart.planets.map((p) => (
           <div key={p.name} className="flex items-center justify-between gap-2 border-b border-white/5 py-1.5">
             <span className="text-mist whitespace-nowrap">
-              {BODY_SYMBOLS[p.name] ?? "•"} {p.name}
+              {BODY_SYMBOLS[p.name] ?? "•"} {localizedBodyName(p.name, lang)}
             </span>
             <span className="text-right whitespace-nowrap">
-              {SIGN_SYMBOLS[p.sign] ?? ""} {p.sign} {formatDegree(p.degree, p.minute)}
+              {SIGN_SYMBOLS[p.sign] ?? ""} {localizedSignName(p.sign, lang)} {formatDegree(p.degree, p.minute)}
               {p.retrograde ? <span className="text-violet"> ℞</span> : null}
             </span>
           </div>
