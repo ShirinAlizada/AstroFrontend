@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Page } from "@/components/Page";
 import { formatLongDate } from "@/lib/date-format";
+import { ShareButtons } from "@/components/ShareButtons";
 
 export const Route = createFileRoute("/qezet/$slug")({
   head: () => ({
@@ -77,20 +77,6 @@ function ArticlePage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const share = async () => {
-    const url = window.location.href;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: data?.title ?? "Virgo Astrology Məqalələr", url });
-        return;
-      } catch {
-        /* istifadəçi ləğv etdi */
-      }
-    }
-    await navigator.clipboard.writeText(url);
-    toast.success("Link kopyalandı");
-  };
-
   if (isLoading) return <Page><p className="text-mist py-16">Yüklənir…</p></Page>;
 
   if (!data) {
@@ -124,13 +110,7 @@ function ArticlePage() {
           <span>{readingTime(data.body)} dəq oxu</span>
           <span>·</span>
           <span>{data.views} baxış</span>
-          <button
-            type="button"
-            onClick={share}
-            className="ml-auto px-4 py-2 rounded-full border border-white/10 hover:border-gold/40 text-goldsoft transition"
-          >
-            Paylaş
-          </button>
+          <ShareButtons className="ml-auto" title={data.title} />
         </div>
 
         {data.excerpt && <p className="mt-6 text-lg text-mist leading-relaxed">{data.excerpt}</p>}

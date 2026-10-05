@@ -4,13 +4,12 @@ import { toast } from "sonner";
 import { BookOpen, Check, Flame, Gem, ShoppingCart, Sparkles, Wand2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { SiteNav } from "@/components/SiteNav";
-import { Sidebar } from "@/components/Sidebar";
 import { CurrentPlanetsPanel } from "@/components/CurrentPlanetsPanel";
-import { SIGN_SYMBOLS, DAY_RULERS_AZ, sunSignFromDate } from "@/lib/astrology";
+import { SIGN_SYMBOLS, DAY_RULERS_AZ, sunSignFromDate, localizedBodyName, localizedSignName } from "@/lib/astrology";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { useAuth, useIsAdmin } from "@/hooks/useAuth";
+import { useMenu } from "@/hooks/useMenu";
 import { useEffectivePlan, usePlans } from "@/hooks/useSubscription";
-import { FREE_PLAN, type SubscriptionPlan } from "@/lib/subscription";
+import { FREE_PLAN, localizedPlanFeature, type SubscriptionPlan } from "@/lib/subscription";
 import { useShopProducts } from "@/hooks/useShop";
 import { useCart } from "@/hooks/useCart";
 import { localizedName, type ShopCategory } from "@/lib/shop";
@@ -30,34 +29,34 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { t } = useLanguage();
-  const { user } = useAuth();
-  const isAdmin = useIsAdmin(user?.id);
+  const { open: menuOpen } = useMenu();
 
   return (
-    <div className="min-h-screen bg-ink text-white font-sans antialiased">
+    <div className="min-h-screen bg-ink text-white font-sans antialiased overflow-x-hidden">
       <SiteNav />
 
-      <div className="mx-auto max-w-7xl px-6 flex gap-8 items-start">
-        <Sidebar
-          isAdmin={isAdmin}
-          hasUser={Boolean(user)}
-          className="hidden lg:flex sticky top-20 shrink-0 w-52 py-1"
-        />
-
+      <div
+        className={`mx-auto max-w-7xl px-6 transition-all duration-200 ease-out ${
+          menuOpen ? "-translate-x-8 opacity-0 pointer-events-none" : "translate-x-0 opacity-100"
+        }`}
+      >
         <div className="min-w-0 flex-1">
-          {/* HERO */}
+          {/* HERO — bir dəfəlik, pilləli giriş animasiyası (hər bölmə üçün ayrıca
+              scroll-reveal deyil, səhifə açılanda tək, idarə olunan bir ardıcıllıq). */}
           <div className="pt-4 pb-6">
-            <p className="text-gold text-xs tracking-[0.35em] uppercase mb-3">
+            <p className="text-gold text-xs tracking-[0.35em] uppercase mb-3 animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
               {t("home.hero_kicker")}
             </p>
-            <h1 className="font-display leading-[0.95] text-5xl md:text-7xl max-w-3xl">
+            <h1 className="font-display leading-[0.95] text-5xl md:text-7xl max-w-3xl animate-in fade-in slide-in-from-bottom-3 duration-700 delay-100 fill-mode-both">
               {t("home.hero_title_1")} <span className="text-goldsoft italic">{t("home.hero_title_em")}</span>{" "}
               {t("home.hero_title_2")}
             </h1>
 
-            <DailyZodiacStrip />
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 fill-mode-both">
+              <DailyZodiacStrip />
+            </div>
 
-            <div className="mt-8">
+            <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both">
               <CurrentPlanetsPanel />
             </div>
           </div>
@@ -213,7 +212,7 @@ function Index() {
  * səhifədədir — burada sadəcə seçim üçün ilkin baxış verilir.
  */
 function SubscriptionPreviewCards() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const plansQ = usePlans();
   const { plan: effectivePlan } = useEffectivePlan();
 
@@ -267,7 +266,7 @@ function SubscriptionPreviewCards() {
               {features.map((f) => (
                 <li key={f} className="flex items-start gap-1.5 text-xs text-white/80">
                   <Check className={`size-3.5 shrink-0 mt-0.5 ${isFree ? "text-mist" : "text-gold"}`} />
-                  <span>{f}</span>
+                  <span>{isFree ? f : localizedPlanFeature(f, lang)}</span>
                 </li>
               ))}
               {extraCount > 0 && (
@@ -312,6 +311,9 @@ function ShopPreviewGrid() {
   const { t, lang } = useLanguage();
   const productsQ = useShopProducts();
   const { addToCart } = useCart();
+  // Düymə basılandan 900ms sonra özünü sıfırlayan "əlavə olundu" bildirişi —
+  // toast-la yanaşı, düymənin özündə də dərhal görünən əks-əlaqə.
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
   if (productsQ.isLoading) {
     return (
@@ -374,10 +376,18 @@ function ShopPreviewGrid() {
                     imageUrl: product.imageUrl,
                   });
                   toast.success(t("magaza.added_to_cart"));
+                  setJustAddedId(product.id);
+                  window.setTimeout(() => setJustAddedId((cur) => (cur === product.id ? null : cur)), 900);
                 }}
-                className="size-8 grid place-items-center rounded-full bg-gold text-ink hover:bg-goldsoft transition disabled:opacity-40 disabled:hover:bg-gold disabled:cursor-not-allowed"
+                className={`size-8 grid place-items-center rounded-full text-ink transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                  justAddedId === product.id ? "bg-gold scale-110" : "bg-gold hover:bg-goldsoft hover:scale-105"
+                }`}
               >
-                <ShoppingCart className="size-4" />
+                {justAddedId === product.id ? (
+                  <Check key="check" className="size-4 animate-in zoom-in-50 duration-200" />
+                ) : (
+                  <ShoppingCart key="cart" className="size-4" />
+                )}
               </button>
             </div>
           </div>
@@ -387,12 +397,10 @@ function ShopPreviewGrid() {
   );
 }
 
-const WEEKDAYS_SHORT_AZ = ["B.", "B.e.", "Ç.a.", "Ç.", "C.a.", "C.", "Ş."];
-
 interface DayCell {
   date: Date;
   label: string;
-  weekday: string;
+  weekdayIndex: number;
   sign: string;
   dayRuler: string;
   isToday: boolean;
@@ -408,7 +416,7 @@ function buildWeekStrip(): DayCell[] {
     cells.push({
       date: d,
       label: String(d.getDate()),
-      weekday: WEEKDAYS_SHORT_AZ[d.getDay()]!,
+      weekdayIndex: d.getDay(),
       sign: sunSignFromDate(iso),
       dayRuler: DAY_RULERS_AZ[d.getDay()] ?? "Günəş",
       isToday: offset === 0,
@@ -423,6 +431,7 @@ function buildWeekStrip(): DayCell[] {
  * ilə server/client arasında tarix uyğunsuzluğu (hydration mismatch) qarşısı alınır.
  */
 function DailyZodiacStrip() {
+  const { t, lang } = useLanguage();
   const [days, setDays] = useState<DayCell[] | null>(null);
 
   useEffect(() => {
@@ -437,19 +446,19 @@ function DailyZodiacStrip() {
     <div className="mt-6 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
       {days.map((d) => (
         <div
-          key={d.label + d.weekday}
+          key={d.label + d.weekdayIndex}
           className={`shrink-0 w-20 rounded-2xl border p-3 text-center transition ${
             d.isToday
               ? "border-gold/60 bg-gold/10"
               : "border-white/10 bg-celestial-card/50"
           }`}
         >
-          <div className="text-[10px] text-mist uppercase tracking-widest">{d.weekday}</div>
+          <div className="text-[10px] text-mist uppercase tracking-widest">{t(`common.weekday_short_${d.weekdayIndex}`)}</div>
           <div className={`font-display text-xl mt-0.5 ${d.isToday ? "text-gold" : "text-white"}`}>{d.label}</div>
-          <div className="text-lg mt-1" title={d.sign}>
+          <div className="text-lg mt-1" title={localizedSignName(d.sign, lang)}>
             {SIGN_SYMBOLS[d.sign] ?? ""}
           </div>
-          <div className="text-[10px] text-mist mt-0.5 truncate">{d.dayRuler}</div>
+          <div className="text-[10px] text-mist mt-0.5 truncate">{localizedBodyName(d.dayRuler, lang)}</div>
         </div>
       ))}
     </div>

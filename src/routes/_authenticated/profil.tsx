@@ -3,14 +3,16 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
+import { Loader2, UserRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Page, PageHeader } from "@/components/Page";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { CITIES, computeNatalChart, SIGN_SYMBOLS } from "@/lib/astrology";
+import { CITIES, computeNatalChart, SIGN_SYMBOLS, localizedSignName } from "@/lib/astrology";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffectivePlan } from "@/hooks/useSubscription";
 import { cancelSubscription } from "@/lib/subscription";
 import { formatLongDate } from "@/lib/date-format";
+import { TimeField24 } from "@/components/TimeField24";
 
 export const Route = createFileRoute("/_authenticated/profil")({
   head: () => ({
@@ -29,6 +31,7 @@ function ProfilePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const schema = z.object({
     full_name: z.string().trim().min(2, t("profil.err_name")).max(80),
@@ -123,6 +126,44 @@ function ProfilePage() {
     }
   }
 
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error(t("profil.avatar_invalid_type"));
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error(t("profil.avatar_too_large"));
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user!.id;
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${uid}/avatar.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, cacheControl: "3600" });
+      if (uploadError) throw uploadError;
+
+      const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+      const avatarUrl = `${pub.publicUrl}?t=${Date.now()}`;
+
+      const { error: profileError } = await supabase.from("profiles").upsert({ id: uid, avatar_url: avatarUrl });
+      if (profileError) throw profileError;
+
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success(t("profil.avatar_updated"));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("common.save_failed"));
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
   return (
     <Page>
       <PageHeader
@@ -133,6 +174,33 @@ function ProfilePage() {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <form onSubmit={save} className="lg:col-span-2 rounded-2xl bg-celestial-card/60 border border-white/5 p-6 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="relative shrink-0">
+              <div className="size-20 rounded-full overflow-hidden border border-white/10 bg-ink2 grid place-items-center">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="size-full object-cover" />
+                ) : (
+                  <UserRound className="size-8 text-mist" />
+                )}
+              </div>
+              {uploadingAvatar && (
+                <div className="absolute inset-0 rounded-full bg-ink/70 grid place-items-center">
+                  <Loader2 className="size-5 animate-spin text-gold" />
+                </div>
+              )}
+            </div>
+            <div>
+              <label
+                htmlFor="avatar-input"
+                className="cursor-pointer inline-block text-sm px-4 py-2 rounded-full border border-gold/40 text-goldsoft hover:bg-gold/10 transition"
+              >
+                {t("profil.avatar_upload_button")}
+              </label>
+              <input id="avatar-input" type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+              <p className="mt-1.5 text-[11px] text-mist">{t("profil.avatar_hint")}</p>
+            </div>
+          </div>
+
           <div>
             <label htmlFor="full_name" className="block text-xs text-mist mb-1.5">{t("profil.ad_soyad")}</label>
             <input id="full_name" value={form.full_name} maxLength={80}
@@ -147,10 +215,12 @@ function ProfilePage() {
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-gold/50" />
             </div>
             <div>
-              <label htmlFor="birth_time" className="block text-xs text-mist mb-1.5">{t("profil.dogum_saati")}</label>
-              <input id="birth_time" type="time" lang="az-AZ" value={form.birth_time}
-                onChange={(e) => setForm({ ...form, birth_time: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-gold/50" />
+              <label htmlFor="birth_time_hour" className="block text-xs text-mist mb-1.5">{t("profil.dogum_saati")}</label>
+              <TimeField24
+                idPrefix="birth_time"
+                value={form.birth_time}
+                onChange={(v) => setForm({ ...form, birth_time: v })}
+              />
             </div>
             <div>
               <label htmlFor="birth_place" className="block text-xs text-mist mb-1.5">{t("common.dogum_yeri")}</label>
@@ -189,6 +259,12 @@ function ProfilePage() {
               </Link>
               <Link to="/rezervasiyalar" className="text-center text-sm px-4 py-2.5 rounded-full border border-white/10 text-mist hover:text-white transition">
                 {t("profil.my_bookings_link")}
+              </Link>
+              <Link to="/sifarislerim" className="text-center text-sm px-4 py-2.5 rounded-full border border-white/10 text-mist hover:text-white transition">
+                {t("profil.my_orders_link")}
+              </Link>
+              <Link to="/odenisler" className="text-center text-sm px-4 py-2.5 rounded-full border border-white/10 text-mist hover:text-white transition">
+                {t("profil.my_payments_link")}
               </Link>
             </div>
           </aside>
@@ -276,11 +352,12 @@ function SubscriptionCard() {
 }
 
 function Row({ label, value }: { label: string; value?: string | null | undefined }) {
+  const { lang } = useLanguage();
   return (
     <div className="flex items-center justify-between border-b border-white/5 pb-2">
       <span className="text-mist">{label}</span>
       <span className="text-white">
-        {value ? `${SIGN_SYMBOLS[value] ?? ""} ${value}` : "—"}
+        {value ? `${SIGN_SYMBOLS[value] ?? ""} ${localizedSignName(value, lang)}` : "—"}
       </span>
     </div>
   );

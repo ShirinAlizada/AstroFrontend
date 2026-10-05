@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Page } from "@/components/Page";
 import { useAuth } from "@/hooks/useAuth";
+import { pushForumReply } from "@/lib/push.functions";
 
 export const Route = createFileRoute("/forum/$topicId")({
   head: () => ({
@@ -61,13 +62,24 @@ function TopicPage() {
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user!.id;
       const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", uid).maybeSingle();
+      const authorName = profile?.full_name || "İstifadəçi";
       const { error } = await supabase.from("forum_replies").insert({
         topic_id: topicId,
         user_id: uid,
-        author_name: profile?.full_name || "İstifadəçi",
+        author_name: authorName,
         body: text,
       });
       if (error) throw error;
+
+      // Browser push, alongside the existing in-app bell notification (DB
+      // trigger). Best-effort — a push failure should never block the reply.
+      try {
+        await pushForumReply({
+          data: { topicId, authorName, preview: text.slice(0, 120) },
+        });
+      } catch {
+        /* push göndərilmədi — səssizcə keç */
+      }
     },
     onSuccess: () => {
       setBody("");

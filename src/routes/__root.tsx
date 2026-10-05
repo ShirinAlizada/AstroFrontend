@@ -14,6 +14,7 @@ import { Toaster } from "sonner";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { StarField } from "../components/StarField";
 import { LanguageProvider } from "../lib/i18n/LanguageContext";
+import { absoluteUrl } from "../lib/site-config";
 
 function NotFoundComponent() {
   return (
@@ -86,8 +87,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Virgo Astrology — Səmavi xəritən" },
       { property: "og:description", content: "Gündəlik horoskop, doğum xəritəsi və uyğunluq tahlili." },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Virgo Astrology" },
+      { property: "og:url", content: absoluteUrl("/") },
+      { property: "og:image", content: absoluteUrl("/og-image.jpg") },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Virgo Astrology — Səmavi xəritən" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@virgoastrology" },
+      { name: "twitter:image", content: absoluteUrl("/og-image.jpg") },
+      { name: "theme-color", content: "#0a0918" },
     ],
     links: [
       {
@@ -95,6 +104,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -125,6 +136,18 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  // Register the service worker unconditionally (not only when the user
+  // opts into push from the notification bell) — Chrome's install prompt
+  // ("Add to Home Screen") requires an active service worker alongside the
+  // manifest, regardless of whether push is ever turned on.
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        /* PWA olmayan mühit (məs. localhost olmayan http) — səssizcə keç */
+      });
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
