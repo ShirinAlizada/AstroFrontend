@@ -1,4 +1,5 @@
 import { Origin, Horoscope } from "circular-natal-horoscope-js";
+import type { Lang } from "@/lib/i18n/translations";
 
 export const SIGNS_AZ = [
   "Qoç",
@@ -78,6 +79,51 @@ export const BODY_SYMBOLS: Record<string, string> = {
   Pluton: "♇",
   Xiron: "⚷",
 };
+
+/** Bürc adlarının dil tərcümələri — daxili açar həmişə Azərbaycanca qalır (SIGN_SYMBOLS, ELEMENTS və s. bu açarla indekslənir), yalnız göstərilən mətn dilə görə dəyişir. */
+const SIGN_NAME_TRANSLATIONS: Record<SignAz, Record<Lang, string>> = {
+  Qoç: { az: "Qoç", en: "Aries", ru: "Овен" },
+  Buğa: { az: "Buğa", en: "Taurus", ru: "Телец" },
+  Əkizlər: { az: "Əkizlər", en: "Gemini", ru: "Близнецы" },
+  Xərçəng: { az: "Xərçəng", en: "Cancer", ru: "Рак" },
+  Aslan: { az: "Aslan", en: "Leo", ru: "Лев" },
+  Qız: { az: "Qız", en: "Virgo", ru: "Дева" },
+  Tərəzi: { az: "Tərəzi", en: "Libra", ru: "Весы" },
+  Əqrəb: { az: "Əqrəb", en: "Scorpio", ru: "Скорпион" },
+  Oxatan: { az: "Oxatan", en: "Sagittarius", ru: "Стрелец" },
+  Oğlaq: { az: "Oğlaq", en: "Capricorn", ru: "Козерог" },
+  Dolça: { az: "Dolça", en: "Aquarius", ru: "Водолей" },
+  Balıqlar: { az: "Balıqlar", en: "Pisces", ru: "Рыбы" },
+};
+
+/** Verilmiş bürcün (daxili Azərbaycanca açar) seçilmiş dildəki adını qaytarır. */
+export function localizedSignName(signAz: string, lang: Lang): string {
+  return SIGN_NAME_TRANSLATIONS[signAz as SignAz]?.[lang] ?? signAz;
+}
+
+/** Planet/cisim adlarının dil tərcümələri — daxili açar Azərbaycanca qalır (BODY_SYMBOLS, planetMeaningAz və s. bu açarla işləyir). */
+const BODY_NAME_TRANSLATIONS: Record<string, Record<Lang, string>> = {
+  Günəş: { az: "Günəş", en: "Sun", ru: "Солнце" },
+  Ay: { az: "Ay", en: "Moon", ru: "Луна" },
+  Merkuri: { az: "Merkuri", en: "Mercury", ru: "Меркурий" },
+  Venera: { az: "Venera", en: "Venus", ru: "Венера" },
+  Mars: { az: "Mars", en: "Mars", ru: "Марс" },
+  Yupiter: { az: "Yupiter", en: "Jupiter", ru: "Юпитер" },
+  Saturn: { az: "Saturn", en: "Saturn", ru: "Сатурн" },
+  Uran: { az: "Uran", en: "Uranus", ru: "Уран" },
+  Neptun: { az: "Neptun", en: "Neptune", ru: "Нептун" },
+  Pluton: { az: "Pluton", en: "Pluto", ru: "Плутон" },
+  Xiron: { az: "Xiron", en: "Chiron", ru: "Хирон" },
+  Sirius: { az: "Sirius", en: "Sirius", ru: "Сириус" },
+  "Şimal düyünü": { az: "Şimal düyünü", en: "North Node", ru: "Северный узел" },
+  "Cənub düyünü": { az: "Cənub düyünü", en: "South Node", ru: "Южный узел" },
+  Lilith: { az: "Lilith", en: "Lilith", ru: "Лилит" },
+};
+
+/** Verilmiş planetin (daxili Azərbaycanca açar) seçilmiş dildəki adını qaytarır. */
+export function localizedBodyName(bodyAz: string, lang: Lang): string {
+  return BODY_NAME_TRANSLATIONS[bodyAz]?.[lang] ?? bodyAz;
+}
 
 export const ELEMENTS: Record<string, "Od" | "Torpaq" | "Hava" | "Su"> = {
   Qoç: "Od",
@@ -311,6 +357,22 @@ export function aspectNameAz(a: string, b: string): string {
   return names[diff] ?? "—";
 }
 
+/** Aspekt adlarının dil tərcümələri — `aspectNameAz`/`ASPECT_DEFS.nameAz` tərəfindən qaytarılan Azərbaycanca ad açar kimi istifadə olunur. */
+const ASPECT_NAME_TRANSLATIONS: Record<string, Record<Lang, string>> = {
+  Konyunksiya: { az: "Konyunksiya", en: "Conjunction", ru: "Соединение" },
+  Yarımsekstil: { az: "Yarımsekstil", en: "Semisextile", ru: "Полусекстиль" },
+  Sekstil: { az: "Sekstil", en: "Sextile", ru: "Секстиль" },
+  Kvadrat: { az: "Kvadrat", en: "Square", ru: "Квадрат" },
+  Trigon: { az: "Trigon", en: "Trine", ru: "Тригон" },
+  Kvinkuns: { az: "Kvinkuns", en: "Quincunx", ru: "Квинконс" },
+  Oppozisiya: { az: "Oppozisiya", en: "Opposition", ru: "Оппозиция" },
+};
+
+/** Verilmiş aspekt adının (daxili Azərbaycanca, "Kvadrat" və s.) seçilmiş dildəki qarşılığını qaytarır. */
+export function localizedAspectName(aspectNameAzValue: string, lang: Lang): string {
+  return ASPECT_NAME_TRANSLATIONS[aspectNameAzValue]?.[lang] ?? aspectNameAzValue;
+}
+
 export interface PlanetPairDetail {
   planet: string;
   symbol: string;
@@ -354,6 +416,53 @@ const PLANET_MEANING_AZ: Record<string, string> = {
 
 export function planetMeaningAz(planet: string): string {
   return PLANET_MEANING_AZ[planet] ?? "";
+}
+
+/** Element adlarının (Od/Torpaq/Hava/Su) dil tərcümələri. */
+const ELEMENT_NAME_TRANSLATIONS: Record<string, Record<Lang, string>> = {
+  Od: { az: "Od", en: "Fire", ru: "Огонь" },
+  Torpaq: { az: "Torpaq", en: "Earth", ru: "Земля" },
+  Hava: { az: "Hava", en: "Air", ru: "Воздух" },
+  Su: { az: "Su", en: "Water", ru: "Вода" },
+};
+
+/** Verilmiş elementin (daxili Azərbaycanca açar) seçilmiş dildəki adını qaytarır. */
+export function localizedElementName(elementAz: string, lang: Lang): string {
+  return ELEMENT_NAME_TRANSLATIONS[elementAz]?.[lang] ?? elementAz;
+}
+
+/** Planet mənasının (uyğunluq cədvəlindəki qısa izah) dil tərcümələri. */
+const PLANET_MEANING_TRANSLATIONS: Record<string, Record<Lang, string>> = {
+  Günəş: {
+    az: "əsas xarakter və ümumi ritm",
+    en: "core character and overall rhythm",
+    ru: "основной характер и общий ритм",
+  },
+  Ay: {
+    az: "emosional ehtiyaclar və daxili təhlükəsizlik",
+    en: "emotional needs and inner security",
+    ru: "эмоциональные потребности и внутренняя безопасность",
+  },
+  Venera: {
+    az: "sevgi dili, estetik zövq və cazibə",
+    en: "love language, aesthetic taste and attraction",
+    ru: "язык любви, эстетический вкус и притяжение",
+  },
+  Mars: {
+    az: "ehtiras, motivasiya və münaqişə tərzi",
+    en: "passion, motivation and conflict style",
+    ru: "страсть, мотивация и стиль конфликта",
+  },
+  Merkuri: {
+    az: "ünsiyyət tərzi və düşüncə axını",
+    en: "communication style and thought flow",
+    ru: "стиль общения и ход мышления",
+  },
+};
+
+/** Verilmiş planetin uyğunluq mənasını (daxili Azərbaycanca açar) seçilmiş dildə qaytarır. */
+export function localizedPlanetMeaning(planet: string, lang: Lang): string {
+  return PLANET_MEANING_TRANSLATIONS[planet]?.[lang] ?? planetMeaningAz(planet);
 }
 
 /** Yalnız tarixdən Günəş bürcünü tapır (təxmini sərhədlər) */

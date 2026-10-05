@@ -3,10 +3,12 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   fetchPlans,
   fetchMySubscription,
+  fetchMyPayments,
   getEffectivePlan,
   FREE_PLAN,
   type SubscriptionPlan,
   type UserSubscription,
+  type PaymentRecord,
 } from "@/lib/subscription";
 
 export function usePlans() {
@@ -47,5 +49,15 @@ export function useEffectivePlan(): {
   return { plan, subscription: subQ.data ?? null, isLoading: plansQ.isLoading || subQ.isLoading };
 }
 
+/** İstifadəçinin ödəniş qəbzləri (Ödənişlərim səhifəsi üçün). */
+export function useMyPayments() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["my-payments", user?.id],
+    enabled: Boolean(user),
+    queryFn: () => fetchMyPayments(user!.id),
+  });
+}
+
 export { FREE_PLAN };
-export type { SubscriptionPlan, UserSubscription };
+export type { SubscriptionPlan, UserSubscription, PaymentRecord };

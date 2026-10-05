@@ -383,9 +383,43 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payment_transactions: {
         Row: {
           amount_azn: number
+          billing_period: string
           created_at: string
           id: string
           note: string | null
@@ -396,6 +430,7 @@ export type Database = {
         }
         Insert: {
           amount_azn: number
+          billing_period?: string
           created_at?: string
           id?: string
           note?: string | null
@@ -406,6 +441,7 @@ export type Database = {
         }
         Update: {
           amount_azn?: number
+          billing_period?: string
           created_at?: string
           id?: string
           note?: string | null
@@ -527,6 +563,8 @@ export type Database = {
         Row: {
           address: string
           created_at: string
+          discount_code: string | null
+          discount_pct: number
           full_name: string
           id: string
           note: string | null
@@ -539,6 +577,8 @@ export type Database = {
         Insert: {
           address: string
           created_at?: string
+          discount_code?: string | null
+          discount_pct?: number
           full_name: string
           id?: string
           note?: string | null
@@ -551,6 +591,8 @@ export type Database = {
         Update: {
           address?: string
           created_at?: string
+          discount_code?: string | null
+          discount_pct?: number
           full_name?: string
           id?: string
           note?: string | null
@@ -561,6 +603,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      shop_product_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          product_id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          product_id: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          product_id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shop_products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shop_products: {
         Row: {
@@ -752,6 +832,7 @@ export type Database = {
       }
       user_subscriptions: {
         Row: {
+          billing_period: string
           cancel_at_period_end: boolean
           created_at: string
           current_period_end: string
@@ -763,6 +844,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          billing_period?: string
           cancel_at_period_end?: boolean
           created_at?: string
           current_period_end: string
@@ -774,6 +856,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          billing_period?: string
           cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string
