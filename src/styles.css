@@ -156,3 +156,33 @@
     animation: none !important;
   }
 }
+
+/* --- Ana səhifənin giriş animasiyası (tw-animate-css `animate-in` sinifləri) və
+   hər hansı digər yerdə istifadə oluna biləcək eyni mexanizm — "prefers-reduced-motion"
+   aktiv olanda animasiyasız, son vəziyyətdə dərhal göstərilir. --- */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in {
+    animation: none !important;
+  }
+}
+
+/* --- Natal xəritəni PDF kimi çap etmək (xerite.tsx, "PDF kimi yüklə" düyməsi):
+   window.print()-i çağırır, brauzerin "Printer olaraq -> PDF-ə saxla" seçimi
+   ilə faktiki PDF faylı alınır. Səhifədə #chart-print-area ID-li bir bölmə
+   varsa, çap zamanı YALNIZ o bölmə görünür (qalan hər şey — naviqasiya,
+   sidebar, düymələr və s. gizlədilir); ID yoxdursa bu blokun təsiri yoxdur. */
+@media print {
+  body:has(#chart-print-area) * {
+    visibility: hidden;
+  }
+  #chart-print-area,
+  #chart-print-area * {
+    visibility: visible;
+  }
+  #chart-print-area {
+    position: absolute;
+    inset: 0;
+    background: #ffffff;
+    color: #111111;
+  }
+}

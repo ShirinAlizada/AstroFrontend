@@ -6,7 +6,16 @@ import { AlertTriangle, Check, Loader2, ShieldCheck, Sparkles, X } from "lucide-
 import { Page, PageHeader } from "@/components/Page";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffectivePlan, usePlans } from "@/hooks/useSubscription";
-import { mockPurchase, FREE_PLAN, type SubscriptionPlan, type UserSubscription } from "@/lib/subscription";
+import {
+  annualPriceAzn,
+  mockPurchase,
+  ANNUAL_DISCOUNT_PCT,
+  FREE_PLAN,
+  localizedPlanFeature,
+  localizedPlanTagline,
+  type SubscriptionPlan,
+  type UserSubscription,
+} from "@/lib/subscription";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { formatLongDate } from "@/lib/date-format";
 
@@ -28,6 +37,7 @@ function PaketlerPage() {
   const { user } = useAuth();
   const plansQ = usePlans();
   const { plan: effectivePlan, subscription } = useEffectivePlan();
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [checkoutPlan, setCheckoutPlan] = useState<SubscriptionPlan | null>(null);
   const [switchWarningPlan, setSwitchWarningPlan] = useState<SubscriptionPlan | null>(null);
 
@@ -50,11 +60,42 @@ function PaketlerPage() {
 
       {plansQ.isLoading && <p className="text-mist">{t("common.yuklenir")}</p>}
 
+      <div className="flex items-center justify-center gap-2 mb-8">
+        <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">
+          <button
+            type="button"
+            onClick={() => setBillingCycle("monthly")}
+            className={`text-sm px-5 py-2 rounded-full transition ${
+              billingCycle === "monthly" ? "bg-gold text-ink font-semibold" : "text-mist hover:text-white"
+            }`}
+          >
+            {t("paket.billing_monthly")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setBillingCycle("yearly")}
+            className={`flex items-center gap-1.5 text-sm px-5 py-2 rounded-full transition ${
+              billingCycle === "yearly" ? "bg-gold text-ink font-semibold" : "text-mist hover:text-white"
+            }`}
+          >
+            {t("paket.billing_yearly")}
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                billingCycle === "yearly" ? "bg-ink/15 text-ink" : "bg-gold/15 text-goldsoft"
+              }`}
+            >
+              {t("paket.billing_yearly_save").replace("{pct}", String(ANNUAL_DISCOUNT_PCT))}
+            </span>
+          </button>
+        </div>
+      </div>
+
       <div className="grid md:grid-cols-3 gap-6 items-stretch">
         {cards.map((plan) => (
           <PlanCard
             key={plan.key}
             plan={plan}
+            billingCycle={billingCycle}
             isCurrent={plan.key === effectivePlan.key}
             hasUser={Boolean(user)}
             onSubscribe={() => handleSubscribe(plan)}
@@ -80,7 +121,9 @@ function PaketlerPage() {
         />
       )}
 
-      {checkoutPlan && <CheckoutModal plan={checkoutPlan} onClose={() => setCheckoutPlan(null)} />}
+      {checkoutPlan && (
+        <CheckoutModal plan={checkoutPlan} billingCycle={billingCycle} onClose={() => setCheckoutPlan(null)} />
+      )}
     </Page>
   );
 }
@@ -136,18 +179,22 @@ function SwitchWarningModal({
 
 function PlanCard({
   plan,
+  billingCycle,
   isCurrent,
   hasUser,
   onSubscribe,
 }: {
   plan: SubscriptionPlan;
+  billingCycle: "monthly" | "yearly";
   isCurrent: boolean;
   hasUser: boolean;
   onSubscribe: () => void;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const isPremium = plan.key === "premium";
   const isFree = plan.key === "pulsuz";
+  const isYearly = billingCycle === "yearly" && !isFree;
+  const displayPrice = isYearly ? annualPriceAzn(plan.priceAzn) : plan.priceAzn;
 
   return (
     <div
@@ -164,15 +211,21 @@ function PlanCard({
       )}
 
       <h2 className="font-display text-2xl">{plan.name}</h2>
-      {plan.tagline && <p className="mt-1.5 text-sm text-mist">{plan.tagline}</p>}
+      {plan.tagline && <p className="mt-1.5 text-sm text-mist">{localizedPlanTagline(plan.tagline, lang)}</p>}
 
       <div className="mt-5 flex items-baseline gap-1">
-        <span className="font-display text-4xl text-gold">{plan.priceAzn}</span>
-        <span className="text-mist text-sm">
-          {" "}
-          AZN {plan.billingPeriod === "monthly" ? t("paket.ayliq") : t("paket.illik")}
+        {/* billingCycle dəyişəndə qiymət yenidən mount olunur — rəqəmin özü
+            dəyişdiyini göstərən qısa bir keçid, aylıq/illik arasında sıçrayış əvəzinə. */}
+        <span key={isYearly ? "yearly" : "monthly"} className="font-display text-4xl text-gold animate-in fade-in slide-in-from-bottom-1 duration-300 fill-mode-both">
+          {displayPrice}
         </span>
+        <span className="text-mist text-sm"> AZN {isYearly ? t("paket.illik") : t("paket.ayliq")}</span>
       </div>
+      {isYearly && (
+        <p className="mt-1 text-[11px] text-mist">
+          {t("paket.billing_yearly_equiv").replace("{price}", String(Math.round(displayPrice / 12)))}
+        </p>
+      )}
 
       <ul className="mt-6 space-y-2.5 flex-1">
         {isFree ? (
@@ -185,7 +238,7 @@ function PlanCard({
           plan.features.map((f) => (
             <li key={f} className="flex items-start gap-2 text-sm text-white/85">
               <Check className="size-4 text-gold shrink-0 mt-0.5" />
-              <span>{f}</span>
+              <span>{localizedPlanFeature(f, lang)}</span>
             </li>
           ))
         )}
@@ -234,7 +287,15 @@ function FreeFeature({ text }: { text: string }) {
   );
 }
 
-function CheckoutModal({ plan, onClose }: { plan: SubscriptionPlan; onClose: () => void }) {
+function CheckoutModal({
+  plan,
+  billingCycle,
+  onClose,
+}: {
+  plan: SubscriptionPlan;
+  billingCycle: "monthly" | "yearly";
+  onClose: () => void;
+}) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -243,10 +304,13 @@ function CheckoutModal({ plan, onClose }: { plan: SubscriptionPlan; onClose: () 
   const [cvv, setCvv] = useState("");
   const [name, setName] = useState("");
 
+  const isYearly = billingCycle === "yearly";
+  const price = isYearly ? annualPriceAzn(plan.priceAzn) : plan.priceAzn;
+
   const purchase = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error(t("paket.daxil_ol_ve_abune_ol"));
-      await mockPurchase(user.id, plan);
+      await mockPurchase(user.id, plan, billingCycle);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["my-subscription", user?.id] });
@@ -268,7 +332,7 @@ function CheckoutModal({ plan, onClose }: { plan: SubscriptionPlan; onClose: () 
 
         <p className="text-gold text-xs tracking-[0.3em] uppercase">{plan.name}</p>
         <h2 className="font-display text-2xl mt-1.5">
-          {plan.priceAzn} AZN <span className="text-base text-mist">{t("paket.ayliq")}</span>
+          {price} AZN <span className="text-base text-mist">{isYearly ? t("paket.illik") : t("paket.ayliq")}</span>
         </h2>
 
         <form
@@ -339,7 +403,7 @@ function CheckoutModal({ plan, onClose }: { plan: SubscriptionPlan; onClose: () 
             className="w-full mt-2 flex items-center justify-center gap-2 py-3 rounded-full bg-gold text-ink font-semibold text-sm hover:bg-goldsoft transition disabled:opacity-50"
           >
             {purchase.isPending && <Loader2 className="size-4 animate-spin" />}
-            {purchase.isPending ? t("paket.checkout_processing") : t("paket.checkout_pay_button").replace("{price}", String(plan.priceAzn))}
+            {purchase.isPending ? t("paket.checkout_processing") : t("paket.checkout_pay_button").replace("{price}", String(price))}
           </button>
         </form>
       </div>

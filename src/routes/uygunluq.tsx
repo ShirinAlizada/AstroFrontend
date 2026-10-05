@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,13 +11,18 @@ import {
   computeNatalChart,
   computeSynastry,
   synastryDetails,
-  planetMeaningAz,
+  localizedAspectName,
+  localizedBodyName,
+  localizedElementName,
+  localizedPlanetMeaning,
+  localizedSignName,
   type NatalChart,
   type SynastryResult,
   type PlanetPairDetail,
 } from "@/lib/astrology";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffectivePlan } from "@/hooks/useSubscription";
+import { TimeField24 } from "@/components/TimeField24";
 
 export const Route = createFileRoute("/uygunluq")({
   head: () => ({
@@ -31,6 +36,34 @@ export const Route = createFileRoute("/uygunluq")({
   }),
   component: SynastryPage,
 });
+
+/**
+ * Nəticə faizini 0-dan faktiki dəyərə qədər "sayaraq" göstərir — hesablama
+ * bitəndə ekranda canlı bir an yaradır, statik rəqəmin birdən peyda olması
+ * əvəzinə. `target` dəyişəndə (yeni hesablama) sayma təzədən başlayır.
+ */
+function useCountUp(target: number, durationMs = 900): number {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    let frame: number;
+    const start = performance.now();
+    const from = 0;
+
+    function tick(now: number) {
+      const elapsed = now - start;
+      const progress = Math.min(1, elapsed / durationMs);
+      const eased = 1 - (1 - progress) * (1 - progress); // ease-out
+      setValue(Math.round(from + (target - from) * eased));
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    }
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target, durationMs]);
+
+  return value;
+}
 
 interface PersonForm {
   name: string;
@@ -48,7 +81,7 @@ function chartFrom(p: PersonForm): NatalChart | null {
 }
 
 function SynastryPage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { user } = useAuth();
   const { plan } = useEffectivePlan();
   const [a, setA] = useState<PersonForm>({ ...empty, name: "Mən" });
@@ -94,9 +127,9 @@ function SynastryPage() {
           lockedText={
             myChart
               ? t("uygunluq.lock_summary")
-                  .replace("{sun}", myChart.sun)
-                  .replace("{moon}", myChart.moon)
-                  .replace("{asc}", myChart.ascendant.sign)
+                  .replace("{sun}", localizedSignName(myChart.sun, lang))
+                  .replace("{moon}", localizedSignName(myChart.moon, lang))
+                  .replace("{asc}", localizedSignName(myChart.ascendant.sign, lang))
               : undefined
           }
         />
@@ -115,12 +148,9 @@ function SynastryPage() {
       </form>
 
       {result && (
-        <section className="mt-10 grid lg:grid-cols-12 gap-6">
+        <section className="mt-10 grid lg:grid-cols-12 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
           <div className="lg:col-span-4 rounded-3xl border border-gold/20 bg-gradient-to-br from-celestial-card/70 to-ink2 p-8 text-center">
-            <div className="font-display text-6xl text-gold">
-              {result.overall}
-              <span className="text-2xl text-mist">%</span>
-            </div>
+            <OverallScore value={result.overall} />
             <div className="text-mist text-xs tracking-[0.3em] uppercase mt-2">{t("uygunluq.overall_label")}</div>
             <div className="flex items-center justify-center gap-4 mt-6 text-3xl">
               <span className="text-goldsoft">{SIGN_SYMBOLS[result.ca.sun]}</span>
@@ -128,7 +158,7 @@ function SynastryPage() {
               <span className="text-violet">{SIGN_SYMBOLS[result.cb.sun]}</span>
             </div>
             <p className="text-mist text-sm mt-2">
-              {result.ca.sun} və {result.cb.sun}
+              {localizedSignName(result.ca.sun, lang)} {t("common.ve")} {localizedSignName(result.cb.sun, lang)}
             </p>
           </div>
 
@@ -154,7 +184,7 @@ function SynastryPage() {
       )}
 
       {result && (
-        <section className="mt-8">
+        <section className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150 fill-mode-both">
           <h2 className="font-display text-2xl mb-4">{t("uygunluq.analysis_heading")}</h2>
           {plan.synastryFullDetail ? (
             <div className="grid gap-4">
@@ -166,19 +196,19 @@ function SynastryPage() {
                   <div className="flex items-center gap-3 sm:w-48 shrink-0">
                     <span className="text-2xl text-gold">{d.symbol}</span>
                     <div>
-                      <div className="text-sm font-medium">{d.planet}</div>
-                      <div className="text-xs text-mist">{planetMeaningAz(d.planet)}</div>
+                      <div className="text-sm font-medium">{localizedBodyName(d.planet, lang)}</div>
+                      <div className="text-xs text-mist">{localizedPlanetMeaning(d.planet, lang)}</div>
                     </div>
                   </div>
                   <div className="flex-1 flex items-center gap-3 text-sm">
-                    <span className="text-goldsoft">{d.signA}</span>
-                    <span className="text-mist text-xs">({d.elementA})</span>
+                    <span className="text-goldsoft">{localizedSignName(d.signA, lang)}</span>
+                    <span className="text-mist text-xs">({localizedElementName(d.elementA, lang)})</span>
                     <span className="text-white/30">↔</span>
-                    <span className="text-violet">{d.signB}</span>
-                    <span className="text-mist text-xs">({d.elementB})</span>
+                    <span className="text-violet">{localizedSignName(d.signB, lang)}</span>
+                    <span className="text-mist text-xs">({localizedElementName(d.elementB, lang)})</span>
                   </div>
                   <div className="flex items-center gap-3 sm:w-40 justify-end">
-                    <span className="text-xs text-mist px-2.5 py-1 rounded-full border border-white/10">{d.aspect}</span>
+                    <span className="text-xs text-mist px-2.5 py-1 rounded-full border border-white/10">{localizedAspectName(d.aspect, lang)}</span>
                     <span className="font-display text-xl text-gold">{d.score}%</span>
                   </div>
                 </div>
@@ -203,7 +233,27 @@ function SynastryPage() {
   );
 }
 
+/** Böyük ümumi uyğunluq faizi — 0-dan hesablanan dəyərə qədər sayır. */
+function OverallScore({ value }: { value: number }) {
+  const counted = useCountUp(value);
+  return (
+    <div className="font-display text-6xl text-gold">
+      {counted}
+      <span className="text-2xl text-mist">%</span>
+    </div>
+  );
+}
+
 function Score({ label, value }: { label: string; value: number }) {
+  // Çəki zolağı 0-dan faktiki dəyərə dolur — böyük ümumi faizin yanında
+  // kiçik göstəricilər də eyni "canlanma" hissini verir.
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setWidth(value));
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+
   return (
     <div className="rounded-2xl bg-celestial-card/60 border border-white/5 p-5">
       <div className="text-mist text-xs mb-2">{label}</div>
@@ -212,7 +262,7 @@ function Score({ label, value }: { label: string; value: number }) {
         <span className="text-base text-mist">%</span>
       </div>
       <div className="mt-3 h-1.5 rounded-full bg-white/10 overflow-hidden">
-        <div className="h-full bg-gold" style={{ width: `${value}%` }} />
+        <div className="h-full bg-gold transition-[width] duration-700 ease-out" style={{ width: `${width}%` }} />
       </div>
     </div>
   );
@@ -254,10 +304,12 @@ function PersonCard({
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-gold/50" />
             </div>
             <div>
-              <label htmlFor={`${id}-time`} className="block text-xs text-mist mb-1.5">{t("common.saat")}</label>
-              <input id={`${id}-time`} type="time" lang="az-AZ" value={person.time}
-                onChange={(e) => setPerson({ ...person, time: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-gold/50" />
+              <label htmlFor={`${id}-time-hour`} className="block text-xs text-mist mb-1.5">{t("common.saat")}</label>
+              <TimeField24
+                idPrefix={`${id}-time`}
+                value={person.time}
+                onChange={(v) => setPerson({ ...person, time: v })}
+              />
             </div>
           </div>
           <div>

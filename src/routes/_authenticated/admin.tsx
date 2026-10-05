@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,9 @@ import {
   type AssignableRole,
 } from "@/lib/admin-users.functions";
 import type { ShopCategory } from "@/lib/shop";
+import { pushOrderStatus } from "@/lib/push.functions";
+import { sendOrderStatusEmail } from "@/lib/email.functions";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -36,12 +39,69 @@ const TABS = [
   { key: "content", label: "Horoskop" },
   { key: "shop", label: "Mağaza" },
   { key: "shop-orders", label: "Mağaza sifarişləri" },
+  { key: "messages", label: "Mesajlar" },
 ] as const;
+
+/** "yeni" statusunda olan mağaza sifarişlərinin sayı — admin panelində bildiriş üçün. Yenisi gələndə (say artanda) toast göstərmək üçün 30 saniyədə bir yenilənir. */
+function useNewOrdersCount() {
+  return useQuery({
+    queryKey: ["admin-new-orders-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("shop_orders")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "yeni");
+      if (error) throw error;
+      return count ?? 0;
+    },
+    refetchInterval: 30_000,
+  });
+}
+
+/** Oxunmamış ("/metnu" formundan daxil olan) əlaqə mesajlarının sayı. Yenisi gələndə toast göstərmək üçün 30 saniyədə bir yenilənir. */
+function useNewMessagesCount() {
+  return useQuery({
+    queryKey: ["admin-new-messages-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("contact_messages")
+        .select("*", { count: "exact", head: true })
+        .eq("is_read", false);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    refetchInterval: 30_000,
+  });
+}
 
 function AdminPage() {
   const { user, loading } = useAuth();
   const isAdmin = useIsAdmin(user?.id);
   const [tab, setTab] = useState<string>("overview");
+  const { data: newOrdersCount } = useNewOrdersCount();
+  const prevOrdersCountRef = useRef<number | null>(null);
+  const { data: newMessagesCount } = useNewMessagesCount();
+  const prevMessagesCountRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (newOrdersCount === undefined) return;
+    const prev = prevOrdersCountRef.current;
+    if (prev !== null && newOrdersCount > prev) {
+      const diff = newOrdersCount - prev;
+      toast.success(diff === 1 ? "Yeni sifariş daxil oldu" : `${diff} yeni sifariş daxil oldu`);
+    }
+    prevOrdersCountRef.current = newOrdersCount;
+  }, [newOrdersCount]);
+
+  useEffect(() => {
+    if (newMessagesCount === undefined) return;
+    const prev = prevMessagesCountRef.current;
+    if (prev !== null && newMessagesCount > prev) {
+      const diff = newMessagesCount - prev;
+      toast.success(diff === 1 ? "Yeni mesaj daxil oldu" : `${diff} yeni mesaj daxil oldu`);
+    }
+    prevMessagesCountRef.current = newMessagesCount;
+  }, [newMessagesCount]);
 
   if (loading) return <Page><p className="text-mist py-10">Yüklənir…</p></Page>;
 
@@ -59,10 +119,20 @@ function AdminPage() {
       <div className="flex flex-wrap gap-2 mb-6">
         {TABS.map((t) => (
           <button key={t.key} type="button" onClick={() => setTab(t.key)}
-            className={`text-sm px-5 py-2 rounded-full border transition ${
+            className={`relative text-sm px-5 py-2 rounded-full border transition ${
               tab === t.key ? "border-gold bg-gold/15 text-goldsoft" : "border-white/10 text-mist hover:border-gold/40"
             }`}>
             {t.label}
+            {t.key === "shop-orders" && (newOrdersCount ?? 0) > 0 && (
+              <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-gold text-ink text-[10px] font-semibold align-middle">
+                {newOrdersCount}
+              </span>
+            )}
+            {t.key === "messages" && (newMessagesCount ?? 0) > 0 && (
+              <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-gold text-ink text-[10px] font-semibold align-middle">
+                {newMessagesCount}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -74,6 +144,7 @@ function AdminPage() {
       {tab === "content" && <ContentTab />}
       {tab === "shop" && <ShopTab />}
       {tab === "shop-orders" && <ShopOrdersTab />}
+      {tab === "messages" && <MessagesTab />}
     </Page>
   );
 }
@@ -759,11 +830,25 @@ function ShopOrdersTab() {
           if (it.product_id) await supabase.rpc("decrement_shop_stock", { _product_id: it.product_id, _qty: it.quantity });
         }
       }
+
+      // Browser push + email, alongside the existing in-app bell notification
+      // (DB trigger). Best-effort — neither should ever block the status update.
+      try {
+        await pushOrderStatus({ data: { orderId: order.id } });
+      } catch {
+        /* push göndərilmədi — səssizcə keç */
+      }
+      try {
+        await sendOrderStatusEmail({ data: { orderId: order.id } });
+      } catch {
+        /* email göndərilmədi — səssizcə keç */
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-shop-orders"] });
       queryClient.invalidateQueries({ queryKey: ["admin-shop-products"] });
       queryClient.invalidateQueries({ queryKey: ["shop-products"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-new-orders-count"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -800,6 +885,69 @@ function ShopOrdersTab() {
   );
 }
 
+function MessagesTab() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-contact-messages"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contact_messages")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const markRead = useMutation({
+    mutationFn: async ({ id, isRead }: { id: string; isRead: boolean }) => {
+      const { error } = await supabase.from("contact_messages").update({ is_read: isRead }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-contact-messages"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-new-messages-count"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-3">
+      {isLoading && <p className="text-mist">Yüklənir…</p>}
+      {data?.length === 0 && <p className="text-mist">Mesaj yoxdur.</p>}
+      {data?.map((m) => (
+        <Card key={m.id}>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-display text-lg">{m.name}</span>
+                {!m.is_read && (
+                  <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-gold/15 text-goldsoft text-[10px] font-semibold tracking-wide uppercase">
+                    Yeni
+                  </span>
+                )}
+              </div>
+              <a href={`mailto:${m.email}`} className="text-xs text-goldsoft hover:underline">{m.email}</a>
+              <p className="text-sm text-white/85 mt-2 whitespace-pre-wrap max-w-2xl">{m.message}</p>
+              <div className="text-[11px] text-mist mt-2">
+                {new Date(m.created_at).toLocaleString("az-AZ")}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => markRead.mutate({ id: m.id, isRead: !m.is_read })}
+              disabled={markRead.isPending}
+              className="shrink-0 text-sm px-4 py-2 rounded-full border border-white/10 hover:border-gold/40 text-mist hover:text-goldsoft transition disabled:opacity-60"
+            >
+              {m.is_read ? "Oxunmamış et" : "Oxundu kimi işarələ"}
+            </button>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded-2xl border border-white/5 bg-celestial-card/60 p-5">
@@ -828,15 +976,187 @@ function OverviewTab() {
   });
   const v = (i: number) => data?.[i] ?? 0;
   return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <Stat label="İstifadəçi" value={v(0)} />
-      <Stat label="Astroloq" value={v(1)} />
-      <Stat label="Rezervasiya" value={v(2)} />
-      <Stat label="Gözləyən rezervasiya" value={v(3)} />
-      <Stat label="Məqalə" value={v(4)} />
-      <Stat label="Dərc olunmuş" value={v(5)} />
-      <Stat label="Forum mövzusu" value={v(6)} />
-      <Stat label="Jurnal qeydi" value={v(7)} />
+    <div className="space-y-8">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Stat label="İstifadəçi" value={v(0)} />
+        <Stat label="Astroloq" value={v(1)} />
+        <Stat label="Rezervasiya" value={v(2)} />
+        <Stat label="Gözləyən rezervasiya" value={v(3)} />
+        <Stat label="Məqalə" value={v(4)} />
+        <Stat label="Dərc olunmuş" value={v(5)} />
+        <Stat label="Forum mövzusu" value={v(6)} />
+        <Stat label="Jurnal qeydi" value={v(7)} />
+      </div>
+      <SalesPanel />
+    </div>
+  );
+}
+
+interface TopProduct {
+  name: string;
+  qty: number;
+}
+
+interface DailyRevenuePoint {
+  date: string;
+  label: string;
+  shop: number;
+  subscription: number;
+}
+
+interface SalesStats {
+  shopRevenue: number;
+  subscriptionRevenue: number;
+  activeSubscribers: number;
+  topProducts: TopProduct[];
+  dailyRevenue: DailyRevenuePoint[];
+}
+
+const TREND_DAYS = 14;
+
+function SalesPanel() {
+  const { data } = useQuery<SalesStats>({
+    queryKey: ["admin-sales-stats"],
+    queryFn: async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - (TREND_DAYS - 1));
+      since.setHours(0, 0, 0, 0);
+
+      const [ordersRes, paymentsRes, subsRes, itemsRes] = await Promise.all([
+        supabase.from("shop_orders").select("total_azn, status, created_at"),
+        supabase.from("payment_transactions").select("amount_azn, status, created_at"),
+        supabase.from("user_subscriptions").select("status, current_period_end"),
+        supabase.from("shop_order_items").select("product_name, quantity"),
+      ]);
+      if (ordersRes.error) throw ordersRes.error;
+      if (paymentsRes.error) throw paymentsRes.error;
+      if (subsRes.error) throw subsRes.error;
+      if (itemsRes.error) throw itemsRes.error;
+
+      const orders = ordersRes.data ?? [];
+      const payments = paymentsRes.data ?? [];
+
+      const shopRevenue = orders
+        .filter((o) => o.status !== "legv_edilib")
+        .reduce((sum, o) => sum + o.total_azn, 0);
+
+      const subscriptionRevenue = payments
+        .filter((p) => p.status === "succeeded")
+        .reduce((sum, p) => sum + p.amount_azn, 0);
+
+      const now = Date.now();
+      const activeSubscribers = (subsRes.data ?? []).filter(
+        (s) => s.status === "active" && new Date(s.current_period_end).getTime() > now,
+      ).length;
+
+      const productTotals = new Map<string, number>();
+      for (const item of itemsRes.data ?? []) {
+        productTotals.set(item.product_name, (productTotals.get(item.product_name) ?? 0) + item.quantity);
+      }
+      const topProducts = [...productTotals.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, qty]) => ({ name, qty }));
+
+      // Son 14 günün gündəlik gəlir trendi (mağaza + abunəlik), qrafik üçün.
+      const dayBuckets = new Map<string, DailyRevenuePoint>();
+      for (let i = 0; i < TREND_DAYS; i++) {
+        const d = new Date(since);
+        d.setDate(d.getDate() + i);
+        const key = d.toISOString().slice(0, 10);
+        dayBuckets.set(key, {
+          date: key,
+          label: d.toLocaleDateString("az-AZ", { day: "2-digit", month: "2-digit" }),
+          shop: 0,
+          subscription: 0,
+        });
+      }
+      for (const o of orders) {
+        if (o.status === "legv_edilib" || !o.created_at) continue;
+        const key = o.created_at.slice(0, 10);
+        const bucket = dayBuckets.get(key);
+        if (bucket) bucket.shop += o.total_azn;
+      }
+      for (const p of payments) {
+        if (p.status !== "succeeded" || !p.created_at) continue;
+        const key = p.created_at.slice(0, 10);
+        const bucket = dayBuckets.get(key);
+        if (bucket) bucket.subscription += p.amount_azn;
+      }
+      const dailyRevenue = [...dayBuckets.values()];
+
+      return { shopRevenue, subscriptionRevenue, activeSubscribers, topProducts, dailyRevenue };
+    },
+  });
+
+  const shopRevenue = data?.shopRevenue ?? 0;
+  const subscriptionRevenue = data?.subscriptionRevenue ?? 0;
+  const totalRevenue = shopRevenue + subscriptionRevenue;
+  const topProducts = data?.topProducts ?? [];
+  const maxQty = topProducts[0]?.qty ?? 1;
+  const dailyRevenue = data?.dailyRevenue ?? [];
+  const hasTrendData = dailyRevenue.some((d) => d.shop + d.subscription > 0);
+
+  return (
+    <div>
+      <h2 className="font-display text-xl mb-4">Satış paneli</h2>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Stat label="Ümumi gəlir (AZN)" value={totalRevenue} />
+        <Stat label="Mağaza gəliri (AZN)" value={shopRevenue} />
+        <Stat label="Abunəlik gəliri (AZN)" value={subscriptionRevenue} />
+        <Stat label="Aktiv abunəçi" value={data?.activeSubscribers ?? 0} />
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-white/5 bg-celestial-card/60 p-5">
+        <p className="text-xs tracking-widest uppercase text-mist mb-4">Son {TREND_DAYS} gün — gəlir trendi (AZN)</p>
+        {!hasTrendData ? (
+          <p className="text-sm text-mist">Bu dövrdə hələ satış yoxdur.</p>
+        ) : (
+          <div className="h-56 -ml-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={dailyRevenue} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="label" stroke="#a7a2c6" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#a7a2c6" fontSize={11} tickLine={false} axisLine={false} width={36} />
+                <Tooltip
+                  contentStyle={{ background: "#1b1740", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12 }}
+                  labelStyle={{ color: "#e7ce88" }}
+                  itemStyle={{ color: "#fff" }}
+                />
+                <Line type="monotone" dataKey="shop" name="Mağaza" stroke="#d4af37" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="subscription" name="Abunəlik" stroke="#8b7bef" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-white/5 bg-celestial-card/60 p-5">
+        <p className="text-xs tracking-widest uppercase text-mist mb-4">Ən çox satılan məhsullar</p>
+        {topProducts.length === 0 ? (
+          <p className="text-sm text-mist">Hələ satış yoxdur.</p>
+        ) : (
+          <div className="space-y-3">
+            {topProducts.map((p, i) => (
+              <div key={p.name} className="flex items-center gap-3">
+                <span className="text-xs text-mist w-4 shrink-0">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate">{p.name}</span>
+                    <span className="text-goldsoft shrink-0">{p.qty} ədəd</span>
+                  </div>
+                  <div className="mt-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gold"
+                      style={{ width: `${Math.max(6, (p.qty / maxQty) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

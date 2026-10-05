@@ -1,28 +1,34 @@
 import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { SiteNav } from "./SiteNav";
-import { Sidebar } from "./Sidebar";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { useAuth, useIsAdmin } from "@/hooks/useAuth";
+import { useMenu } from "@/hooks/useMenu";
 
 export function Page({ children }: { children: ReactNode }) {
   const { t } = useLanguage();
-  const { user } = useAuth();
-  const isAdmin = useIsAdmin(user?.id);
+  // Sabit sol panel yoxdur — naviqasiya yalnız SiteNav-ın menyu düyməsi ilə
+  // açılır. Menyu açıq olanda əsas məzmun (bu "əsas səhifədəkilər") sola
+  // sürüşüb solğunlaşır, bağlananda isə geri qayıdır (bax: menu-store.ts).
+  const { open: menuOpen } = useMenu();
+  const contentClass = `mx-auto max-w-7xl px-6 transition-all duration-200 ease-out ${
+    menuOpen ? "-translate-x-8 opacity-0 pointer-events-none" : "translate-x-0 opacity-100"
+  }`;
   return (
-    <div className="min-h-screen bg-ink text-white font-sans antialiased">
+    <div className="min-h-screen bg-ink text-white font-sans antialiased overflow-x-hidden">
       <SiteNav />
-      <div className="mx-auto max-w-7xl px-6 flex gap-8 items-start">
-        <Sidebar
-          isAdmin={isAdmin}
-          hasUser={Boolean(user)}
-          className="hidden lg:flex sticky top-20 shrink-0 w-52 py-1"
-        />
-        <main className="min-w-0 flex-1 pb-20">{children}</main>
+      <div className={contentClass}>
+        <main className="min-w-0 pb-20">{children}</main>
       </div>
-      <footer className="border-t border-white/5 mt-10">
-        <div className="mx-auto max-w-7xl px-6 py-8 text-xs text-mist flex flex-col sm:flex-row gap-2 justify-between">
+      <footer className={`border-t border-white/5 mt-10 transition-all duration-200 ease-out ${
+        menuOpen ? "-translate-x-8 opacity-0 pointer-events-none" : "translate-x-0 opacity-100"
+      }`}>
+        <div className="mx-auto max-w-7xl px-6 py-8 text-xs text-mist flex flex-col sm:flex-row gap-3 sm:gap-6 justify-between items-start sm:items-center">
           <span>© {new Date().getFullYear()} Virgo Astrology</span>
-          <span>{t("footer.tagline")}</span>
+          <span className="sm:flex-1 sm:text-center">{t("footer.tagline")}</span>
+          <span className="flex gap-4 shrink-0">
+            <Link to="/sertler" className="hover:text-goldsoft transition">İstifadə şərtləri</Link>
+            <Link to="/mexfilik" className="hover:text-goldsoft transition">Məxfilik</Link>
+          </span>
         </div>
       </footer>
     </div>

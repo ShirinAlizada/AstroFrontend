@@ -17,9 +17,9 @@ const linkClass = "rounded-xl px-3.5 py-2.5 text-sm text-mist hover:text-white h
 const activeClass = { className: "text-white bg-white/5" };
 
 /**
- * Saytın bütün bölmələrinə keçid siyahısı. Masaüstündə (lg+) Page.tsx daxilində
- * sabit sol panel kimi, mobil/tablet ekranlarda isə SiteNav-ın açdığı çəkmə
- * (drawer) menyusunun içində eyni komponent istifadə olunur.
+ * Saytın bütün bölmələrinə keçid siyahısı. Bütün ekran ölçülərində (masaüstü
+ * daxil) yalnız SiteNav-ın açdığı çəkmə (drawer) menyusunun içində göstərilir —
+ * sabit/həmişəaçıq sol panel yoxdur.
  */
 export function Sidebar({
   isAdmin,

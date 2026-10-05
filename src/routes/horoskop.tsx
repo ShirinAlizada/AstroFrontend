@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Page, PageHeader } from "@/components/Page";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { SIGNS_AZ, SIGN_SYMBOLS } from "@/lib/astrology";
+import { SIGNS_AZ, SIGN_SYMBOLS, localizedSignName } from "@/lib/astrology";
+import { ShareButtons } from "@/components/ShareButtons";
 
 export const Route = createFileRoute("/horoskop")({
   head: () => ({
@@ -26,7 +27,7 @@ const PERIODS = [
 ] as const;
 
 function HoroscopePage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [sign, setSign] = useState<string>("Aslan");
   const [period, setPeriod] = useState<string>("daily");
 
@@ -61,7 +62,7 @@ function HoroscopePage() {
               sign === s ? "border-gold bg-gold/10" : "border-white/10 bg-celestial-card/40 hover:border-gold/40"
             }`}>
             <div className="text-2xl text-goldsoft">{SIGN_SYMBOLS[s]}</div>
-            <div className="text-xs mt-1.5 text-mist">{s}</div>
+            <div className="text-xs mt-1.5 text-mist">{localizedSignName(s, lang)}</div>
           </button>
         ))}
       </div>
@@ -78,28 +79,38 @@ function HoroscopePage() {
       </div>
 
       <section className="rounded-3xl border border-white/10 bg-gradient-to-b from-ink2 to-ink p-6 md:p-8">
-        <div className="flex items-center gap-3">
-          <span className="text-4xl text-gold">{SIGN_SYMBOLS[sign]}</span>
-          <div>
-            <h2 className="font-display text-3xl">{sign}</h2>
-            <p className="text-mist text-xs tracking-widest uppercase">
-              {t(PERIODS.find((p) => p.key === period)?.labelKey ?? "horoskop.daily")} {t("horoskop.proqnoz")}
-            </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-4xl text-gold">{SIGN_SYMBOLS[sign]}</span>
+            <div>
+              <h2 className="font-display text-3xl">{localizedSignName(sign, lang)}</h2>
+              <p className="text-mist text-xs tracking-widest uppercase">
+                {t(PERIODS.find((p) => p.key === period)?.labelKey ?? "horoskop.daily")} {t("horoskop.proqnoz")}
+              </p>
+            </div>
           </div>
+          {data && (
+            <ShareButtons
+              title={`${localizedSignName(sign, lang)} — ${t(PERIODS.find((p) => p.key === period)?.labelKey ?? "horoskop.daily")} ${t("horoskop.proqnoz")}`}
+            />
+          )}
         </div>
 
         {isLoading && <p className="text-mist mt-6">{t("common.yuklenir")}</p>}
         {!isLoading && !data && <p className="text-mist mt-6">{t("horoskop.not_ready")}</p>}
 
         {data && (
-          <>
+          // `key` ilə bürc/dövr dəyişəndə React bu bloku yenidən mount edir —
+          // nəticədə hər dəyişiklikdə eyni qısa, yüngül keçid təkrarlanır
+          // (sıçrayış əvəzinə, dəyişdiyini göstərən bir siqnal).
+          <div key={`${sign}-${period}`} className="animate-in fade-in slide-in-from-bottom-1 duration-300 fill-mode-both">
             <p className="mt-5 text-[15px] leading-relaxed text-white/85 max-w-3xl">{data.content}</p>
             <div className="grid grid-cols-3 gap-3 mt-6 max-w-xl">
               <Meter label={t("home.demo_sevgi")} value={data.love} />
               <Meter label={t("home.demo_karyera")} value={data.career} />
               <Meter label={t("home.demo_maliyye")} value={data.finance} />
             </div>
-          </>
+          </div>
         )}
       </section>
     </Page>
@@ -107,6 +118,16 @@ function HoroscopePage() {
 }
 
 function Meter({ label, value }: { label: string; value: number }) {
+  // Çəki zolağı 0-dan başlayıb faktiki dəyərə qədər "dolur" — bürc/dövr
+  // dəyişəndə (Meter yenidən mount olunanda) bu, neçə faiz olduğunu hiss
+  // etdirən bir hərəkətə çevrilir, sadəcə statik ədəd əvəzinə.
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setWidth(value));
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+
   return (
     <div className="rounded-2xl bg-celestial-card/60 border border-white/5 p-4">
       <div className="text-mist text-xs mb-2">{label}</div>
@@ -115,7 +136,7 @@ function Meter({ label, value }: { label: string; value: number }) {
         <span className="text-base text-mist">%</span>
       </div>
       <div className="mt-3 h-1.5 rounded-full bg-white/10 overflow-hidden">
-        <div className="h-full bg-gold" style={{ width: `${value}%` }} />
+        <div className="h-full bg-gold transition-[width] duration-700 ease-out" style={{ width: `${width}%` }} />
       </div>
     </div>
   );
