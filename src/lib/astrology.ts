@@ -272,13 +272,25 @@ export function computeNatalChart(input: BirthInput): NatalChart {
   };
 }
 
+/**
+ * Şərh sətirlərinin növü — mətn özü BURADA SAXLANILMIR (əvvəllər belə idi və
+ * dil dəyişəndə "Şərh" bölməsi həmişə Azərbaycanca qalırdı). `computeSynastry`
+ * yalnız bu "açar + parametr" strukturunu qaytarır, faktiki mətn UI tərəfində
+ * `localizedSynastryNote` ilə seçilmiş dilə görə generasiya olunur.
+ */
+export interface SynastryNote {
+  kind: "elements_same" | "elements_diff" | "moon_strong" | "moon_tense" | "venus_strong" | "venus_diff" | "mercury_strong" | "mercury_tense";
+  /** `elements_same`/`elements_diff` üçün daxili (Azərbaycanca) element açarları — UI tərəfində `localizedElementName` ilə tərcümə olunur. */
+  params?: { el?: string; a?: string; b?: string };
+}
+
 /** İki xəritə arasında uyğunluq (sinastriya) */
 export interface SynastryResult {
   overall: number;
   love: number;
   friendship: number;
   communication: number;
-  notes: string[];
+  notes: SynastryNote[];
 }
 
 function signIndex(sign: string) {
@@ -310,33 +322,79 @@ export function computeSynastry(a: NatalChart, b: NatalChart): SynastryResult {
   const communication = Math.round((mercury * 0.6 + sun * 0.2 + asc * 0.2));
   const overall = Math.round((love + friendship + communication) / 3);
 
-  const notes: string[] = [];
+  const notes: SynastryNote[] = [];
   const ea = ELEMENTS[get(a, "Günəş")];
   const eb = ELEMENTS[get(b, "Günəş")];
   if (ea && eb) {
-    notes.push(
-      ea === eb
-        ? `Hər iki Günəş ${ea} elementindədir — təbii anlaşma və oxşar ritm.`
-        : `Günəş elementləri fərqlidir (${ea} və ${eb}) — bir-birinizi tamamlaya bilərsiniz.`,
-    );
+    notes.push(ea === eb ? { kind: "elements_same", params: { el: ea } } : { kind: "elements_diff", params: { a: ea, b: eb } });
   }
-  notes.push(
-    moon >= 75
-      ? "Ay bağlantınız güclüdür: emosional təhlükəsizlik hissi yüksəkdir."
-      : "Ay bağlantısı gərginlik yarada bilər: hisslərinizi açıq danışın.",
-  );
-  notes.push(
-    venus >= 75
-      ? "Venera harmoniyası romantikanı və estetik zövqləri birləşdirir."
-      : "Venera fərqi sevgi dilinizin fərqli olduğunu göstərir.",
-  );
-  notes.push(
-    mercury >= 70
-      ? "Merkuri uyğunluğu ünsiyyəti asanlaşdırır."
-      : "Merkuri gərginliyi anlaşılmazlıq riski yaradır — səbirli olun.",
-  );
+  notes.push({ kind: moon >= 75 ? "moon_strong" : "moon_tense" });
+  notes.push({ kind: venus >= 75 ? "venus_strong" : "venus_diff" });
+  notes.push({ kind: mercury >= 70 ? "mercury_strong" : "mercury_tense" });
 
   return { overall, love, friendship, communication, notes };
+}
+
+/** `SynastryNote.kind` → hər dil üçün faktiki mətn generatoru. */
+const SYNASTRY_NOTE_BUILDERS: Record<SynastryNote["kind"], (params: NonNullable<SynastryNote["params"]>, lang: Lang) => string> = {
+  elements_same: (p, lang) => {
+    const el = localizedElementName(p.el ?? "", lang);
+    return {
+      az: `Hər iki Günəş ${el} elementindədir — təbii anlaşma və oxşar ritm.`,
+      en: `Both of your Suns are in the ${el} element — natural understanding and a similar rhythm.`,
+      ru: `Солнца у вас обоих в элементе ${el} — естественное понимание и похожий ритм.`,
+    }[lang];
+  },
+  elements_diff: (p, lang) => {
+    const elA = localizedElementName(p.a ?? "", lang);
+    const elB = localizedElementName(p.b ?? "", lang);
+    return {
+      az: `Günəş elementləri fərqlidir (${elA} və ${elB}) — bir-birinizi tamamlaya bilərsiniz.`,
+      en: `Your Sun elements differ (${elA} and ${elB}) — you can complement each other.`,
+      ru: `Солнечные элементы разные (${elA} и ${elB}) — вы можете дополнять друг друга.`,
+    }[lang];
+  },
+  moon_strong: (_p, lang) =>
+    ({
+      az: "Ay bağlantınız güclüdür: emosional təhlükəsizlik hissi yüksəkdir.",
+      en: "Your Moon connection is strong: a high sense of emotional security.",
+      ru: "Ваша лунная связь сильна: высокое чувство эмоциональной безопасности.",
+    })[lang],
+  moon_tense: (_p, lang) =>
+    ({
+      az: "Ay bağlantısı gərginlik yarada bilər: hisslərinizi açıq danışın.",
+      en: "The Moon connection can create tension — talk openly about your feelings.",
+      ru: "Лунная связь может вызывать напряжение — открыто говорите о своих чувствах.",
+    })[lang],
+  venus_strong: (_p, lang) =>
+    ({
+      az: "Venera harmoniyası romantikanı və estetik zövqləri birləşdirir.",
+      en: "Venus harmony blends romance and shared aesthetic taste.",
+      ru: "Гармония Венеры объединяет романтику и общий эстетический вкус.",
+    })[lang],
+  venus_diff: (_p, lang) =>
+    ({
+      az: "Venera fərqi sevgi dilinizin fərqli olduğunu göstərir.",
+      en: "The Venus difference shows your love languages aren't quite the same.",
+      ru: "Различие Венеры показывает, что ваши языки любви не совсем совпадают.",
+    })[lang],
+  mercury_strong: (_p, lang) =>
+    ({
+      az: "Merkuri uyğunluğu ünsiyyəti asanlaşdırır.",
+      en: "Mercury compatibility makes communication easier.",
+      ru: "Совместимость Меркурия облегчает общение.",
+    })[lang],
+  mercury_tense: (_p, lang) =>
+    ({
+      az: "Merkuri gərginliyi anlaşılmazlıq riski yaradır — səbirli olun.",
+      en: "Mercury tension raises the risk of misunderstanding — be patient.",
+      ru: "Напряжение Меркурия повышает риск недопонимания — будь терпелив.",
+    })[lang],
+};
+
+/** Verilmiş şərh sətrinin seçilmiş dildəki faktiki mətnini qaytarır. */
+export function localizedSynastryNote(note: SynastryNote, lang: Lang): string {
+  return SYNASTRY_NOTE_BUILDERS[note.kind](note.params ?? {}, lang);
 }
 
 /** Aspekt adı (bürc fərqinə görə) */
@@ -384,7 +442,7 @@ export interface PlanetPairDetail {
   score: number;
 }
 
-const SYNASTRY_PLANETS = ["Günəş", "Ay", "Venera", "Mars", "Merkuri"] as const;
+const SYNASTRY_PLANETS = ["Günəş", "Ay", "Venera", "Mars", "Merkuri", "Yupiter", "Saturn"] as const;
 
 /** Hər planet üçün ayrı-ayrı cüt təhlili (Cütlük Xəritəsi səhifəsinin genişləndirilmiş görünüşü üçün) */
 export function synastryDetails(a: NatalChart, b: NatalChart): PlanetPairDetail[] {
@@ -412,6 +470,8 @@ const PLANET_MEANING_AZ: Record<string, string> = {
   Venera: "sevgi dili, estetik zövq və cazibə",
   Mars: "ehtiras, motivasiya və münaqişə tərzi",
   Merkuri: "ünsiyyət tərzi və düşüncə axını",
+  Yupiter: "böyümə, nikbinlik və bölüşülən fürsətlər",
+  Saturn: "məsuliyyət, sərhədlər və uzunmüddətli sadiqlik",
 };
 
 export function planetMeaningAz(planet: string): string {
@@ -458,11 +518,69 @@ const PLANET_MEANING_TRANSLATIONS: Record<string, Record<Lang, string>> = {
     en: "communication style and thought flow",
     ru: "стиль общения и ход мышления",
   },
+  Yupiter: {
+    az: "böyümə, nikbinlik və bölüşülən fürsətlər",
+    en: "growth, optimism and shared opportunity",
+    ru: "рост, оптимизм и общие возможности",
+  },
+  Saturn: {
+    az: "məsuliyyət, sərhədlər və uzunmüddətli sadiqlik",
+    en: "responsibility, boundaries and long-term commitment",
+    ru: "ответственность, границы и долгосрочная преданность",
+  },
 };
 
 /** Verilmiş planetin uyğunluq mənasını (daxili Azərbaycanca açar) seçilmiş dildə qaytarır. */
 export function localizedPlanetMeaning(planet: string, lang: Lang): string {
   return PLANET_MEANING_TRANSLATIONS[planet]?.[lang] ?? planetMeaningAz(planet);
+}
+
+/** Element adı üzrə faiz açarları (Cütlük Xəritəsi səhifəsindəki "Elementlərin tərəzisi" vizualı üçün). */
+export interface ElementBalance {
+  Od: number;
+  Torpaq: number;
+  Hava: number;
+  Su: number;
+}
+
+/** Xəritədəki bütün planetlərin elementlər üzrə faiz bölgüsü (cəm ~100). */
+export function elementBalance(chart: NatalChart): ElementBalance {
+  const counts: ElementBalance = { Od: 0, Torpaq: 0, Hava: 0, Su: 0 };
+  for (const p of chart.planets) {
+    const el = ELEMENTS[p.sign];
+    if (el) counts[el] += 1;
+  }
+  const total = counts.Od + counts.Torpaq + counts.Hava + counts.Su;
+  if (total === 0) return counts;
+  return {
+    Od: Math.round((counts.Od / total) * 100),
+    Torpaq: Math.round((counts.Torpaq / total) * 100),
+    Hava: Math.round((counts.Hava / total) * 100),
+    Su: Math.round((counts.Su / total) * 100),
+  };
+}
+
+/** Elementlər arasında ən güclü (dominant) olanı qaytarır — bölgü boşdursa "null". */
+export function dominantElement(balance: ElementBalance): keyof ElementBalance | null {
+  let best: keyof ElementBalance | null = null;
+  let bestVal = -1;
+  for (const key of ["Od", "Torpaq", "Hava", "Su"] as const) {
+    if (balance[key] > bestVal) {
+      bestVal = balance[key];
+      best = key;
+    }
+  }
+  return bestVal > 0 ? best : null;
+}
+
+/** Ümumi uyğunluq faizinə görə münasibətin "arxetipi" — UI başlıq/şərh mətnini bu açarla seçir. */
+export type SynastryTier = "cosmic" | "strong" | "growing" | "challenging";
+
+export function synastryTier(overall: number): SynastryTier {
+  if (overall >= 82) return "cosmic";
+  if (overall >= 68) return "strong";
+  if (overall >= 55) return "growing";
+  return "challenging";
 }
 
 /** Yalnız tarixdən Günəş bürcünü tapır (təxmini sərhədlər) */

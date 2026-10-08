@@ -20,6 +20,8 @@ export interface ShopProduct {
   descriptionRu: string | null;
   priceAzn: number;
   unitLabel: string | null;
+  unitLabelEn: string | null;
+  unitLabelRu: string | null;
   imageUrl: string | null;
   stockQty: number;
 }
@@ -90,10 +92,23 @@ export function localizedDescription(
   return p.description;
 }
 
+/** Ölçü vahidi (məs. "78 kart", "180 qram") — AZ-da saxlanılır, tərcümə yoxdursa AZ mətninə qayıdır. unit_label özü boşdursa (null) null qalır. */
+export function localizedUnitLabel(
+  p: { unitLabel: string | null; unitLabelEn: string | null; unitLabelRu: string | null },
+  lang: Lang,
+): string | null {
+  if (!p.unitLabel) return null;
+  if (lang === "en") return p.unitLabelEn || p.unitLabel;
+  if (lang === "ru") return p.unitLabelRu || p.unitLabel;
+  return p.unitLabel;
+}
+
 export async function fetchShopProducts(): Promise<ShopProduct[]> {
   const { data, error } = await supabase
     .from("shop_products")
-    .select("id, category, slug, name, name_en, name_ru, description, description_en, description_ru, price_azn, unit_label, image_url, stock_qty")
+    .select(
+      "id, category, slug, name, name_en, name_ru, description, description_en, description_ru, price_azn, unit_label, unit_label_en, unit_label_ru, image_url, stock_qty",
+    )
     .eq("is_active", true)
     .order("category", { ascending: true })
     .order("sort_order", { ascending: true });
@@ -110,6 +125,8 @@ export async function fetchShopProducts(): Promise<ShopProduct[]> {
     descriptionRu: p.description_ru,
     priceAzn: p.price_azn,
     unitLabel: p.unit_label,
+    unitLabelEn: p.unit_label_en,
+    unitLabelRu: p.unit_label_ru,
     imageUrl: p.image_url,
     stockQty: p.stock_qty,
   }));
