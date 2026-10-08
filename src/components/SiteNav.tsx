@@ -7,17 +7,30 @@ import { useAuth, useIsAdmin } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import type { Lang } from "@/lib/i18n/translations";
+import { localizedArticleTitle } from "@/lib/articles";
+import { localizedName } from "@/lib/shop";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Sidebar } from "@/components/Sidebar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useMenu } from "@/hooks/useMenu";
 
-type SearchHit = {
-  to: "/qezet/$slug" | "/astroloq";
-  params?: { slug: string };
-  title: string;
-  subtitle?: string;
-};
+// Qlobal axtarış saytın bütün açıq (public) məzmun növlərini əhatə edir:
+// məqalələr (başlıq+qısa təsvir+tam mətn, hər 3 dildə), astroloqlar
+// (ad+bio), mağaza məhsulları (ad+təsvir, hər 3 dildə) və forum mövzuları
+// (başlıq+mətn). Əvvəlki versiya yalnız məqalə BAŞLIĞINI (yalnız AZ sütunu)
+// və astroloqları axtarırdı — "full_name" sütunu isə ümumiyyətlə mövcud
+// deyildi (əsl sütun "display_name"dir), ona görə astroloq axtarışı həmişə
+// səssizcə uğursuz olurdu (PostgREST 400, udma nəticəsində boş nəticə).
+type SearchHit =
+  | { kind: "article"; slug: string; title: string; title_en: string | null; title_ru: string | null }
+  | { kind: "astrologer"; name: string }
+  | { kind: "product"; slug: string; name: string; nameEn: string | null; nameRu: string | null }
+  | { kind: "forum"; topicId: string; title: string };
+
+function orIlike(columns: string[], q: string): string {
+  return columns.map((c) => `${c}.ilike.%${q}%`).join(",");
+}
 
 function useSiteSearch(term: string) {
   return useQuery({
@@ -25,33 +38,91 @@ function useSiteSearch(term: string) {
     enabled: term.trim().length >= 2,
     queryFn: async (): Promise<SearchHit[]> => {
       const q = term.trim();
-      const [articlesRes, astrologersRes] = await Promise.all([
+      const [articlesRes, astrologersRes, productsRes, topicsRes] = await Promise.all([
         supabase
           .from("articles")
-          .select("slug, title")
-          .ilike("title", `%${q}%`)
+          .select("slug, title, title_en, title_ru")
+          .eq("published", true)
+          .or(orIlike(["title", "title_en", "title_ru", "excerpt", "excerpt_en", "excerpt_ru", "body", "body_en", "body_ru"], q))
           .limit(6),
         supabase
           .from("astrologers")
-          .select("id, full_name")
-          .ilike("full_name", `%${q}%`)
+          .select("id, display_name, bio")
+          .or(orIlike(["display_name", "bio"], q))
+          .limit(4),
+        supabase
+          .from("shop_products")
+          .select("slug, name, name_en, name_ru, description, description_en, description_ru")
+          .eq("is_active", true)
+          .or(orIlike(["name", "name_en", "name_ru", "description", "description_en", "description_ru"], q))
+          .limit(4),
+        supabase
+          .from("forum_topics")
+          .select("id, title, body")
+          .eq("is_hidden", false)
+          .or(orIlike(["title", "body"], q))
           .limit(4),
       ]);
 
       const hits: SearchHit[] = [];
       for (const a of articlesRes.data ?? []) {
-        hits.push({ to: "/qezet/$slug", params: { slug: a.slug }, title: a.title, subtitle: "Məqalə" });
+        hits.push({ kind: "article", slug: a.slug, title: a.title, title_en: a.title_en, title_ru: a.title_ru });
       }
       for (const a of astrologersRes.data ?? []) {
-        hits.push({ to: "/astroloq", title: a.full_name, subtitle: "Astroloq" });
+        hits.push({ kind: "astrologer", name: a.display_name });
       }
-      return hits.slice(0, 10);
+      for (const p of productsRes.data ?? []) {
+        hits.push({ kind: "product", slug: p.slug, name: p.name, nameEn: p.name_en, nameRu: p.name_ru });
+      }
+      for (const ft of topicsRes.data ?? []) {
+        hits.push({ kind: "forum", topicId: ft.id, title: ft.title });
+      }
+      return hits.slice(0, 12);
     },
   });
 }
 
+function hitLabel(h: SearchHit, lang: Lang): string {
+  switch (h.kind) {
+    case "article":
+      return localizedArticleTitle(h, lang);
+    case "astrologer":
+      return h.name;
+    case "product":
+      return localizedName({ name: h.name, nameEn: h.nameEn, nameRu: h.nameRu }, lang);
+    case "forum":
+      return h.title;
+  }
+}
+
+function hitDestination(h: SearchHit): { to: "/qezet/$slug" | "/astroloq" | "/tarot" | "/forum/$topicId"; params?: Record<string, string> } {
+  switch (h.kind) {
+    case "article":
+      return { to: "/qezet/$slug", params: { slug: h.slug } };
+    case "astrologer":
+      return { to: "/astroloq" };
+    case "product":
+      return { to: "/tarot" };
+    case "forum":
+      return { to: "/forum/$topicId", params: { topicId: h.topicId } };
+  }
+}
+
+function hitSubtitle(h: SearchHit, t: (key: string) => string): string {
+  switch (h.kind) {
+    case "article":
+      return t("nav.meqale");
+    case "astrologer":
+      return t("nav.astroloqlar");
+    case "product":
+      return t("nav.magaza");
+    case "forum":
+      return t("nav.forum");
+  }
+}
+
 function SearchBox() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [term, setTerm] = useState("");
   const [debounced, setDebounced] = useState("");
   const [focused, setFocused] = useState(false);
@@ -94,21 +165,24 @@ function SearchBox() {
             <p className="px-3 py-2 text-xs text-mist">{t("common.netice_tapilmadi")}</p>
           )}
           {!isFetching &&
-            hits?.map((h, i) => (
-              <Link
-                key={i}
-                to={h.to}
-                params={h.params as never}
-                onClick={() => {
-                  setFocused(false);
-                  setTerm("");
-                }}
-                className="block rounded-xl px-3 py-2 text-sm hover:bg-white/5"
-              >
-                <span className="text-white">{h.title}</span>
-                {h.subtitle && <span className="ml-2 text-xs text-mist">{h.subtitle}</span>}
-              </Link>
-            ))}
+            hits?.map((h, i) => {
+              const dest = hitDestination(h);
+              return (
+                <Link
+                  key={i}
+                  to={dest.to}
+                  params={dest.params as never}
+                  onClick={() => {
+                    setFocused(false);
+                    setTerm("");
+                  }}
+                  className="block rounded-xl px-3 py-2 text-sm hover:bg-white/5"
+                >
+                  <span className="text-white">{hitLabel(h, lang)}</span>
+                  <span className="ml-2 text-xs text-mist">{hitSubtitle(h, t)}</span>
+                </Link>
+              );
+            })}
         </div>
       )}
     </div>

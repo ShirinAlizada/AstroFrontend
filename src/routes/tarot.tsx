@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProductReviews, useRatingSummaries, useShopProducts } from "@/hooks/useShop";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
-import { localizedDescription, localizedName, upsertProductReview, type ShopCategory, type ShopProduct } from "@/lib/shop";
+import { localizedDescription, localizedName, localizedUnitLabel, upsertProductReview, type ShopCategory, type ShopProduct } from "@/lib/shop";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { formatLongDate } from "@/lib/date-format";
 import type { Lang } from "@/lib/i18n/translations";
@@ -195,7 +195,8 @@ function ShopPage() {
       list = list.filter((p) => {
         const name = localizedName(p, lang).toLowerCase();
         const description = localizedDescription(p, lang).toLowerCase();
-        return name.includes(query) || description.includes(query);
+        const unitLabel = (localizedUnitLabel(p, lang) ?? "").toLowerCase();
+        return name.includes(query) || description.includes(query) || unitLabel.includes(query);
       });
     }
 
@@ -291,6 +292,7 @@ function ShopPage() {
         {filtered.map((product) => {
           const name = localizedName(product, lang);
           const description = localizedDescription(product, lang);
+          const unitLabel = localizedUnitLabel(product, lang);
           const outOfStock = product.stockQty <= 0;
           const lowStock = !outOfStock && product.stockQty <= 5;
           const summary = ratingSummaries?.[product.id];
@@ -346,7 +348,7 @@ function ShopPage() {
                 </p>
               )}
               <div className="mt-3 flex items-center justify-between text-xs text-mist">
-                {product.unitLabel && <span>{product.unitLabel}</span>}
+                {unitLabel && <span>{unitLabel}</span>}
                 <span className="font-display text-lg text-gold ml-auto">{product.priceAzn} AZN</span>
               </div>
               <button

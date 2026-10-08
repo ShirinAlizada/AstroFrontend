@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Page, PageHeader } from "@/components/Page";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { formatLongDate } from "@/lib/date-format";
+import { localizedArticleTitle, localizedArticleExcerpt, localizedArticleBody } from "@/lib/articles";
 
 export const Route = createFileRoute("/qezet/")({
   head: () => ({
@@ -44,7 +45,9 @@ function QezetPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("articles")
-        .select("id, title, slug, excerpt, body, tag, cover_url, published_at, views")
+        .select(
+          "id, title, title_en, title_ru, slug, excerpt, excerpt_en, excerpt_ru, body, body_en, body_ru, tag, cover_url, published_at, views",
+        )
         .eq("published", true)
         .order("published_at", { ascending: false });
       if (error) throw error;
@@ -58,7 +61,10 @@ function QezetPage() {
     .filter(
       (a) =>
         (tag === "hamısı" || a.tag === tag) &&
-        (q.trim() === "" || `${a.title} ${a.excerpt ?? ""}`.toLowerCase().includes(q.toLowerCase())),
+        (q.trim() === "" ||
+          `${localizedArticleTitle(a, lang)} ${localizedArticleExcerpt(a, lang) ?? ""} ${localizedArticleBody(a, lang)} ${a.tag}`
+            .toLowerCase()
+            .includes(q.toLowerCase())),
     )
     .sort((a, b) =>
       sort === "populyar"
@@ -131,10 +137,13 @@ function QezetPage() {
               className="block rounded-3xl border border-white/8 bg-celestial-card/60 p-8 hover:border-gold/40 transition"
             >
               <span className="text-xs tracking-widest uppercase text-gold">{lead.tag}</span>
-              <h2 className="font-display text-3xl md:text-4xl mt-3 max-w-3xl leading-tight">{lead.title}</h2>
-              {lead.excerpt && <p className="mt-4 text-mist max-w-2xl leading-relaxed">{lead.excerpt}</p>}
+              <h2 className="font-display text-3xl md:text-4xl mt-3 max-w-3xl leading-tight">{localizedArticleTitle(lead, lang)}</h2>
+              {localizedArticleExcerpt(lead, lang) && (
+                <p className="mt-4 text-mist max-w-2xl leading-relaxed">{localizedArticleExcerpt(lead, lang)}</p>
+              )}
               <p className="mt-5 text-xs text-mist/80">
-                {fmt(lead.published_at, lang)} · {t("qezet.reading_time_n").replace("{n}", String(readingTime(lead.body)))} · {t("qezet.views_n").replace("{n}", String(lead.views))}
+                {fmt(lead.published_at, lang)} · {t("qezet.reading_time_n").replace("{n}", String(readingTime(localizedArticleBody(lead, lang))))} ·{" "}
+                {t("qezet.views_n").replace("{n}", String(lead.views))}
               </p>
               <span className="mt-4 inline-block text-sm text-goldsoft">{t("qezet.read_more")}</span>
             </Link>
@@ -149,10 +158,13 @@ function QezetPage() {
                 className="rounded-2xl bg-celestial-card/60 border border-white/5 p-6 hover:border-gold/30 transition flex flex-col"
               >
                 <span className="text-xs tracking-widest uppercase text-gold">{a.tag}</span>
-                <h3 className="font-display text-2xl mt-3 leading-tight">{a.title}</h3>
-                {a.excerpt && <p className="mt-3 text-sm text-mist leading-relaxed">{a.excerpt}</p>}
+                <h3 className="font-display text-2xl mt-3 leading-tight">{localizedArticleTitle(a, lang)}</h3>
+                {localizedArticleExcerpt(a, lang) && (
+                  <p className="mt-3 text-sm text-mist leading-relaxed">{localizedArticleExcerpt(a, lang)}</p>
+                )}
                 <p className="mt-4 text-xs text-mist/80">
-                  {fmt(a.published_at, lang)} · {t("qezet.reading_time_n").replace("{n}", String(readingTime(a.body)))} · {t("qezet.views_n").replace("{n}", String(a.views))}
+                  {fmt(a.published_at, lang)} · {t("qezet.reading_time_n").replace("{n}", String(readingTime(localizedArticleBody(a, lang))))} ·{" "}
+                  {t("qezet.views_n").replace("{n}", String(a.views))}
                 </p>
                 <span className="mt-3 inline-block text-sm text-goldsoft">{t("qezet.read_more")}</span>
               </Link>
@@ -183,7 +195,7 @@ function QezetPage() {
                   params={{ slug: a.slug }}
                   className="text-sm leading-snug hover:text-goldsoft transition"
                 >
-                  {a.title}
+                  {localizedArticleTitle(a, lang)}
                   <span className="block text-xs text-mist/70 mt-1">{t("qezet.views_n").replace("{n}", String(a.views))}</span>
                 </Link>
               </li>

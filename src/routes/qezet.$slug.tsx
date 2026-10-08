@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Page } from "@/components/Page";
 import { formatLongDate } from "@/lib/date-format";
 import { ShareButtons } from "@/components/ShareButtons";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { localizedArticleTitle, localizedArticleExcerpt, localizedArticleBody } from "@/lib/articles";
 
 export const Route = createFileRoute("/qezet/$slug")({
   head: () => ({
@@ -27,6 +29,7 @@ function readingTime(text: string) {
 
 function ArticlePage() {
   const { slug } = Route.useParams();
+  const { t, lang } = useLanguage();
   const [progress, setProgress] = useState(0);
   const counted = useRef<string | null>(null);
 
@@ -35,7 +38,7 @@ function ArticlePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("articles")
-        .select("id, title, excerpt, body, tag, published_at, views, slug")
+        .select("id, title, title_en, title_ru, excerpt, excerpt_en, excerpt_ru, body, body_en, body_ru, tag, published_at, views, slug")
         .eq("slug", slug)
         .eq("published", true)
         .maybeSingle();
@@ -50,7 +53,7 @@ function ArticlePage() {
     queryFn: async () => {
       const { data: rows, error } = await supabase
         .from("articles")
-        .select("id, title, slug, excerpt, tag")
+        .select("id, title, title_en, title_ru, slug, excerpt, excerpt_en, excerpt_ru, tag")
         .eq("published", true)
         .eq("tag", data!.tag)
         .neq("id", data!.id)
@@ -77,43 +80,46 @@ function ArticlePage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  if (isLoading) return <Page><p className="text-mist py-16">Yüklənir…</p></Page>;
+  if (isLoading) return <Page><p className="text-mist py-16">{t("common.yuklenir")}</p></Page>;
 
   if (!data) {
     return (
       <Page>
         <div className="py-20">
-          <h1 className="font-display text-4xl">Məqalə tapılmadı</h1>
-          <Link to="/qezet" className="mt-4 inline-block text-goldsoft">← Məqalələrə qayıt</Link>
+          <h1 className="font-display text-4xl">{t("qezet.not_found")}</h1>
+          <Link to="/qezet" className="mt-4 inline-block text-goldsoft">{t("qezet.back")}</Link>
         </div>
       </Page>
     );
   }
 
-  const paragraphs = data.body.split(/\n{2,}/);
+  const title = localizedArticleTitle(data, lang);
+  const excerpt = localizedArticleExcerpt(data, lang);
+  const body = localizedArticleBody(data, lang);
+  const paragraphs = body.split(/\n{2,}/);
 
   return (
     <Page>
       <div className="fixed left-0 top-0 h-[3px] bg-gold z-50 transition-[width]" style={{ width: `${progress}%` }} />
       <article className="py-6 max-w-3xl">
-        <Link to="/qezet" className="text-sm text-mist hover:text-goldsoft">← Məqalələr</Link>
+        <Link to="/qezet" className="text-sm text-mist hover:text-goldsoft">{t("qezet.back")}</Link>
         <p className="mt-6 text-gold text-xs tracking-[0.35em] uppercase">{data.tag}</p>
-        <h1 className="font-display text-4xl md:text-5xl mt-3 leading-tight">{data.title}</h1>
+        <h1 className="font-display text-4xl md:text-5xl mt-3 leading-tight">{title}</h1>
 
         <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-mist">
           {data.published_at && (
             <span>
-              {formatLongDate(new Date(data.published_at), "az")}
+              {formatLongDate(new Date(data.published_at), lang)}
             </span>
           )}
           <span>·</span>
-          <span>{readingTime(data.body)} dəq oxu</span>
+          <span>{t("qezet.reading_time_n").replace("{n}", String(readingTime(body)))}</span>
           <span>·</span>
-          <span>{data.views} baxış</span>
-          <ShareButtons className="ml-auto" title={data.title} />
+          <span>{t("qezet.views_n").replace("{n}", String(data.views))}</span>
+          <ShareButtons className="ml-auto" title={title} />
         </div>
 
-        {data.excerpt && <p className="mt-6 text-lg text-mist leading-relaxed">{data.excerpt}</p>}
+        {excerpt && <p className="mt-6 text-lg text-mist leading-relaxed">{excerpt}</p>}
 
         <div className="mt-8 space-y-4 text-[17px] leading-relaxed text-white/90">
           {paragraphs.map((p, i) => (
@@ -123,7 +129,7 @@ function ArticlePage() {
 
         {related && related.length > 0 && (
           <section className="mt-14 border-t border-white/8 pt-8">
-            <h2 className="text-xs tracking-[0.3em] uppercase text-gold">Oxşar yazılar</h2>
+            <h2 className="text-xs tracking-[0.3em] uppercase text-gold">{t("qezet.related_heading")}</h2>
             <div className="mt-5 grid sm:grid-cols-3 gap-4">
               {related.map((r) => (
                 <Link
@@ -132,8 +138,10 @@ function ArticlePage() {
                   params={{ slug: r.slug }}
                   className="rounded-2xl border border-white/5 bg-celestial-card/60 p-5 hover:border-gold/30 transition"
                 >
-                  <h3 className="font-display text-lg leading-tight">{r.title}</h3>
-                  {r.excerpt && <p className="mt-2 text-xs text-mist line-clamp-3">{r.excerpt}</p>}
+                  <h3 className="font-display text-lg leading-tight">{localizedArticleTitle(r, lang)}</h3>
+                  {localizedArticleExcerpt(r, lang) && (
+                    <p className="mt-2 text-xs text-mist line-clamp-3">{localizedArticleExcerpt(r, lang)}</p>
+                  )}
                 </Link>
               ))}
             </div>

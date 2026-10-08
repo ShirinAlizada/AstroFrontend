@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Page, PageHeader } from "@/components/Page";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { SIGNS_AZ, SIGN_SYMBOLS, localizedSignName } from "@/lib/astrology";
+import { localizedHoroscopeContent } from "@/lib/horoscopes";
 import { ShareButtons } from "@/components/ShareButtons";
 
 export const Route = createFileRoute("/horoskop")({
@@ -36,7 +37,7 @@ function HoroscopePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("horoscopes")
-        .select("*")
+        .select("sign, period, period_start, content, content_en, content_ru, love, career, finance")
         .eq("sign", sign)
         .eq("period", period)
         .order("period_start", { ascending: false })
@@ -104,7 +105,7 @@ function HoroscopePage() {
           // nəticədə hər dəyişiklikdə eyni qısa, yüngül keçid təkrarlanır
           // (sıçrayış əvəzinə, dəyişdiyini göstərən bir siqnal).
           <div key={`${sign}-${period}`} className="animate-in fade-in slide-in-from-bottom-1 duration-300 fill-mode-both">
-            <p className="mt-5 text-[15px] leading-relaxed text-white/85 max-w-3xl">{data.content}</p>
+            <p className="mt-5 text-[15px] leading-relaxed text-white/85 max-w-3xl">{localizedHoroscopeContent(data, lang)}</p>
             <div className="grid grid-cols-3 gap-3 mt-6 max-w-xl">
               <Meter label={t("home.demo_sevgi")} value={data.love} />
               <Meter label={t("home.demo_karyera")} value={data.career} />
